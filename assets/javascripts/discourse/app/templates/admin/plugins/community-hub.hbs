@@ -1,0 +1,164 @@
+<div class="community-hub-admin">
+  {{#if this.isLoading}}
+    <p>Loading...</p>
+  {{else}}
+    <div class="community-hub-section">
+      <h3>Navigation Items</h3>
+      <div class="community-hub-actions">
+        <button type="button" {{on "click" (fn this.addNew "nav")}}>Add</button>
+        <button type="button" {{on "click" (fn this.saveCategory "nav")}}>Save</button>
+      </div>
+
+      <ul>
+        {{#each this.navItems as |item idx|}}
+          <li class="community-hub-item" draggable="true" data-section="nav_items" data-index={{idx}}>
+            <span>{{idx}}. {{item.label}}</span>
+            <span>({{item.url}})</span>
+            <button type="button" {{on "click" (fn this.openModal "nav" item)}}>Edit</button>
+            <button type="button" {{on "click" (fn this.deleteItem "nav" item.id)}}>Delete</button>
+          </li>
+        {{/each}}
+      </ul>
+    </div>
+
+    <div class="community-hub-section">
+      <h3>Hero Banners</h3>
+      <div class="community-hub-actions">
+        <button type="button" {{on "click" (fn this.addNew "hero")}}>Add</button>
+        <button type="button" {{on "click" (fn this.saveCategory "hero")}}>Save</button>
+      </div>
+
+      <ul>
+        {{#each this.heroBanners as |item idx|}}
+          <li class="community-hub-item" draggable="true" data-section="hero_banners" data-index={{idx}}>
+            <span>{{idx}}. {{item.title}}</span>
+            <span>({{item.link_url}})</span>
+            <button type="button" {{on "click" (fn this.openModal "hero" item)}}>Edit</button>
+            <button type="button" {{on "click" (fn this.deleteItem "hero" item.id)}}>Delete</button>
+          </li>
+        {{/each}}
+      </ul>
+    </div>
+
+    <div class="community-hub-section">
+      <h3>Sidebar Widgets</h3>
+      <div class="community-hub-actions">
+        <button type="button" {{on "click" (fn this.addNew "sidebar")}}>Add</button>
+        <button type="button" {{on "click" (fn this.saveCategory "sidebar")}}>Save</button>
+      </div>
+
+      <ul>
+        {{#each this.sidebarWidgets as |item idx|}}
+          <li class="community-hub-item" draggable="true" data-section="sidebar_widgets" data-index={{idx}}>
+            <span>{{idx}}. {{item.title}}</span>
+            <span>({{item.link_url}})</span>
+            <button type="button" {{on "click" (fn this.openModal "sidebar" item)}}>Edit</button>
+            <button type="button" {{on "click" (fn this.deleteItem "sidebar" item.id)}}>Delete</button>
+          </li>
+        {{/each}}
+      </ul>
+    </div>
+  {{/if}}
+
+  {{#if this.modalOpen}}
+    <div class="modal-backdrop"></div>
+    <div class="community-hub-modal">
+      <h3>
+        {{#if this.isNavModal}}Edit Navigation Item{{/if}}
+        {{#if this.isHeroModal}}Edit Hero Banner{{/if}}
+        {{#if this.isSidebarModal}}Edit Sidebar Widget{{/if}}
+      </h3>
+
+      <div class="community-hub-modal-body">
+        {{#if this.isNavModal}}
+          <label>Label</label>
+          <Input @value={{this.modalDraft.label}} />
+
+          <label>URL</label>
+          <Input @value={{this.modalDraft.url}} />
+
+          <label>Icon Name</label>
+          <Input @value={{this.modalDraft.icon_name}} />
+
+          <label>External Link</label>
+          <Input @type="checkbox" @checked={{this.modalDraft.is_external}} />
+
+          <label>Active</label>
+          <Input @type="checkbox" @checked={{this.modalDraft.active}} />
+        {{/if}}
+
+        {{#if this.isHeroModal}}
+          <label>Title</label>
+          <Input @value={{this.modalDraft.title}} />
+
+          <label>Subtitle</label>
+          <Input @value={{this.modalDraft.subtitle}} />
+
+          <label>Image URL</label>
+          <Input @value={{this.modalDraft.image_url}} />
+          <input id="community-hub-upload-file" type="file" accept="image/*" />
+          <button type="button" {{on "click" this.uploadModalImage}}>Upload</button>
+          {{#if this.uploadError}}
+            <p style="color: red;">{{this.uploadError}}</p>
+          {{/if}}
+
+          <label>Internal Category (dropdown)</label>
+          <select {{on "change" (fn this.setCategoryLink "hero")}}>
+            <option value="">-- External URL --</option>
+            {{#each this.categories as |cat|}}
+              <option value={{cat.id}}>{{cat.name}}</option>
+            {{/each}}
+          </select>
+
+          <label>Link URL</label>
+          <Input @value={{this.modalDraft.link_url}} />
+
+          <label>Background Color</label>
+          <Input @value={{this.modalDraft.bg_color}} />
+
+          <label>Style Type</label>
+          <Input @value={{this.modalDraft.style_type}} />
+
+          <label>Active</label>
+          <Input @type="checkbox" @checked={{this.modalDraft.active}} />
+        {{/if}}
+
+        {{#if this.isSidebarModal}}
+          <label>Title</label>
+          <Input @value={{this.modalDraft.title}} />
+
+          <label>Image URL</label>
+          <Input @value={{this.modalDraft.image_url}} />
+          <input id="community-hub-upload-file" type="file" accept="image/*" />
+          <button type="button" {{on "click" this.uploadModalImage}}>Upload</button>
+          {{#if this.uploadError}}
+            <p style="color: red;">{{this.uploadError}}</p>
+          {{/if}}
+
+          <label>Internal Category (dropdown)</label>
+          <select {{on "change" (fn this.setCategoryLink "sidebar")}}>
+            <option value="">-- External URL --</option>
+            {{#each this.categories as |cat|}}
+              <option value={{cat.id}}>{{cat.name}}</option>
+            {{/each}}
+          </select>
+
+          <label>Link URL</label>
+          <Input @value={{this.modalDraft.link_url}} />
+
+          <label>Widget Type</label>
+          <Input @value={{this.modalDraft.widget_type}} />
+
+          <label>Active</label>
+          <Input @type="checkbox" @checked={{this.modalDraft.active}} />
+        {{/if}}
+      </div>
+
+      <div class="community-hub-modal-footer">
+        <button type="button" {{on "click" this.saveModalChanges}}>Save</button>
+        <button type="button" {{on "click" this.closeModal}}>Cancel</button>
+      </div>
+    </div>
+  {{/if}}
+</div>
+
