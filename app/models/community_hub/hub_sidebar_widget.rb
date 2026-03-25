@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module CommunityHub
-  class HubSidebarWidget < ::ApplicationRecord
+  class HubSidebarWidget < ::ActiveRecord::Base
     self.table_name = "hub_sidebar_widgets"
 
     scope :active, -> { where(active: true) }

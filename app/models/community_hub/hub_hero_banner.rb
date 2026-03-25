@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module CommunityHub
-  class HubHeroBanner < ::ApplicationRecord
+  class HubHeroBanner < ::ActiveRecord::Base
     self.table_name = "hub_hero_banners"
 
     scope :active, -> { where(active: true) }

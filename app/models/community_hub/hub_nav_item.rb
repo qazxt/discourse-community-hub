@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module CommunityHub
-  class HubNavItem < ::ApplicationRecord
+  class HubNavItem < ::ActiveRecord::Base
     self.table_name = "hub_nav_items"
 
     scope :active, -> { where(active: true) }
