@@ -10,6 +10,8 @@ require_relative "lib/community_hub"
 enabled_site_setting :community_hub_enabled
 
 after_initialize do
+  add_admin_route "community_hub.title", "plugins/community-hub"
+
   # 公开 API
   Discourse::Application.routes.append do
     get "/hub-config.json" => "community_hub/config#show"
