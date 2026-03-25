@@ -2,6 +2,7 @@ import Controller from "@ember/controller";
 import { action } from "@ember/object";
 import { tracked } from "@glimmer/tracking";
 import { scheduleOnce } from "@ember/runloop";
+import { ajax } from "discourse/lib/ajax";
 
 export default class AdminPluginsCommunityHubController extends Controller {
   @tracked isLoading = true;
@@ -51,8 +52,7 @@ export default class AdminPluginsCommunityHubController extends Controller {
   async loadConfig() {
     this.isLoading = true;
 
-    const res = await fetch("/admin/plugins/community-hub/config", { credentials: "same-origin" });
-    const data = await res.json();
+    const data = await ajax("/admin/plugins/community-hub/config.json");
 
     this.navItems = data.nav_items || [];
     this.heroBanners = data.hero_banners || [];
@@ -65,8 +65,7 @@ export default class AdminPluginsCommunityHubController extends Controller {
 
   async loadCategories() {
     try {
-      const res = await fetch("/categories.json", { credentials: "same-origin" });
-      const data = await res.json();
+      const data = await ajax("/categories.json");
       const cats = data?.category_list?.categories || data?.categories || [];
       this.categories = Array.isArray(cats) ? cats : [];
     } catch {
@@ -177,16 +176,12 @@ export default class AdminPluginsCommunityHubController extends Controller {
     if (!id) return;
     const api =
       type === "nav"
-        ? `/admin/plugins/community-hub/nav_items/${id}`
+        ? `/admin/plugins/community-hub/nav_items/${id}.json`
         : type === "hero"
-          ? `/admin/plugins/community-hub/hero_banners/${id}`
-          : `/admin/plugins/community-hub/sidebar_widgets/${id}`;
+          ? `/admin/plugins/community-hub/hero_banners/${id}.json`
+          : `/admin/plugins/community-hub/sidebar_widgets/${id}.json`;
 
-    await fetch(api, {
-      method: "DELETE",
-      credentials: "same-origin",
-      headers: { "X-CSRF-Token": this.csrfToken() }
-    });
+    await ajax(api, { type: "DELETE" });
     await this.loadConfig();
   }
 
@@ -244,10 +239,10 @@ export default class AdminPluginsCommunityHubController extends Controller {
   async saveCategory(type) {
     const api =
       type === "nav"
-        ? "/admin/plugins/community-hub/nav_items"
+        ? "/admin/plugins/community-hub/nav_items.json"
         : type === "hero"
-          ? "/admin/plugins/community-hub/hero_banners"
-          : "/admin/plugins/community-hub/sidebar_widgets";
+          ? "/admin/plugins/community-hub/hero_banners.json"
+          : "/admin/plugins/community-hub/sidebar_widgets.json";
 
     const prop = this.sectionProp(type);
     const items = (this[prop] || []).map((x) => ({
@@ -268,15 +263,7 @@ export default class AdminPluginsCommunityHubController extends Controller {
       widget_type: x.widget_type
     }));
 
-    await fetch(api, {
-      method: "PUT",
-      credentials: "same-origin",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": this.csrfToken()
-      },
-      body: JSON.stringify({ items })
-    });
+    await ajax(api, { type: "PUT", data: { items } });
 
     await this.loadConfig();
   }

@@ -10,14 +10,14 @@ module CommunityHub
     get "/hub-config.json" => "config#show"
 
     # Admin UI API (仅管理员可访问)
-    get "/admin/plugins/community-hub/config" => "admin/config#index"
-    put "/admin/plugins/community-hub/nav_items" => "admin/config#save_nav_items"
-    put "/admin/plugins/community-hub/hero_banners" => "admin/config#save_hero_banners"
-    put "/admin/plugins/community-hub/sidebar_widgets" => "admin/config#save_sidebar_widgets"
+    get "/admin/plugins/community-hub/config.json" => "admin/config#index"
+    put "/admin/plugins/community-hub/nav_items.json" => "admin/config#save_nav_items"
+    put "/admin/plugins/community-hub/hero_banners.json" => "admin/config#save_hero_banners"
+    put "/admin/plugins/community-hub/sidebar_widgets.json" => "admin/config#save_sidebar_widgets"
 
-    delete "/admin/plugins/community-hub/nav_items/:id" => "admin/config#destroy_nav_item"
-    delete "/admin/plugins/community-hub/hero_banners/:id" => "admin/config#destroy_hero_banner"
-    delete "/admin/plugins/community-hub/sidebar_widgets/:id" => "admin/config#destroy_sidebar_widget"
+    delete "/admin/plugins/community-hub/nav_items/:id.json" => "admin/config#destroy_nav_item"
+    delete "/admin/plugins/community-hub/hero_banners/:id.json" => "admin/config#destroy_hero_banner"
+    delete "/admin/plugins/community-hub/sidebar_widgets/:id.json" => "admin/config#destroy_sidebar_widget"
   end
 end
 
