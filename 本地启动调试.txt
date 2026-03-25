@@ -1,0 +1,144 @@
+启动并测试插件，如果有问题则修改，直到没有问题：
+
+================================================================================
+问题修复闭环（反复执行，记住优先级）
+================================================================================
+出现报错时按优先级处理：
+  1) 启动阻断（Boot / Rails 初始化）
+  2) API 5xx / 权限错误
+  3) 前端路由 / 组件报错
+  4) 测试失败
+
+每次修复后重复：
+  - 重启受影响进程（必要时 `./d/shutdown_dev` 再 `./d/boot_dev`）
+  - 重跑受影响测试和冒烟路径
+
+通过标准：
+  - `./d/rails s`、`./d/ember-cli` 稳定
+  - 两插件主要功能可用
+  - 插件测试可通过，或有明确可接受的缺测说明
+
+快速冒烟（WSL）：`curl -sI http://127.0.0.1:3000/` 应 200；`curl -sI http://127.0.0.1:4200/` 若 reset/失败 → **先杀容器内重复 Ember 再起一套**（见下「网站打不开」）。
+
+网站打不开 / 4200 connection reset：
+  - 3000 正常、4200 异常：多为 Ember 已挂、端口映射仍在。`cd /root/discourse` 后 `docker exec -u root discourse_dev pkill -9 -f "ember server"` 与 `pkill -9 -f "pnpm --dir=frontend/discourse"`，再 **宿主**执行 `nohup ./d/ember-cli > /tmp/ember.log 2>&1 &`，等日志出现 Build successful 后刷新 http://localhost:4200
+  - 仍异常：`docker restart discourse_dev`，再只起一套 `rails s` + `ember-cli`（避免多个 nohup 叠进程）
+
+================================================================================
+
+0) 插件源码在本仓库，必须先同步到 Discourse（否则会一直跑旧代码、报 addUserNavigationItem 等错）
+在 WSL 里执行（路径按你机器上仓库位置改，常见为 /mnt/e/project/discouse-plugins）：
+
+  cd /mnt/e/project/discouse-plugins
+  bash scripts/sync-plugins-to-discourse.sh
+  （若本机有多个用户的 ~/discourse，可一次全同步：bash scripts/sync-all-discourse-homes.sh）
+
+  若 Discourse 源码在 /root/discourse（root 用户下开发），请固定写死 plugins 路径，避免脚本误选别的目录：
+    DISCOURSE_PLUGINS_DIR=/root/discourse/plugins bash scripts/sync-plugins-to-discourse.sh
+
+说明：
+- 会自动把 plugins/rt-collections-todo、plugins/rt-lucky-spin 拷到 Discourse 的 plugins 目录。
+- 请用普通用户执行同步脚本，不要用 root（root + cp -a 常把目录变成 root 属主，容器里 Ember 读挂载目录会失败）。
+- 若以 root 同步过，或 ./d/ember-cli 报错：EACCES ... WatchedDir ... plugins/.../assets/javascripts：
+  把两个插件目录的属主改成与 plugins 父目录一致（路径按你的 Discourse 根目录改）：
+    sudo chown -R "$(stat -c '%u:%g' ~/discourse/plugins)" \
+      ~/discourse/plugins/rt-lucky-spin ~/discourse/plugins/rt-collections-todo
+    # 若在 /root/discourse：
+    # sudo chown -R "$(stat -c '%u:%g' /root/discourse/plugins)" \
+    #   /root/discourse/plugins/rt-lucky-spin /root/discourse/plugins/rt-collections-todo
+  然后重新 ./d/ember-cli。
+  若仍 EACCES，再补一层可读/可执行（目录需 o+x 才能被容器内 node stat）：
+    sudo chmod -R a+rX ~/discourse/plugins/rt-lucky-spin ~/discourse/plugins/rt-collections-todo
+  或只修权限、不重新拷贝插件（改权限即可时）：
+    DISCOURSE_PLUGINS_DIR=/root/discourse/plugins bash scripts/fix-plugin-permissions.sh
+    （脚本会在宿主机 chown/chmod 后，若发现正在运行的 discourse_dev 容器，再在容器内对 /src/plugins 下两插件执行一次 chown discourse + chmod，减少 EACCES。）
+  若仍 EACCES：同步脚本已改为 **不用 cp -a**（避免从 /mnt/e NTFS 拷权限到 ext4）。仍失败时仅开发环境可试：
+    SYNC_PLUGINS_CHMOD_777=1 DISCOURSE_PLUGINS_DIR=/root/discourse/plugins bash scripts/sync-plugins-to-discourse.sh
+    SYNC_PLUGINS_CHMOD_777=1 DISCOURSE_PLUGINS_DIR=/root/discourse/plugins bash scripts/fix-plugin-permissions.sh
+  若 fix 脚本提示「容器未运行」或仍报错：先 `docker ps` 看容器名是否叫 discourse_dev；若不是：
+    export DISCOURSE_DEV_CONTAINER=你的容器名
+    bash scripts/fix-plugin-permissions.sh
+  一键收集信息（把终端输出完整贴出）：
+    bash scripts/diagnose-plugin-eacces.sh
+  若 Discourse 源码或 plugins 在 **/mnt/e、/mnt/c（NTFS）** 且直接挂进 Docker，Node 有时会 EACCES。请把 Discourse 放在 **WSL 的 ext4**（例如 /root/discourse），只用本仓库脚本把插件同步到该目录下的 plugins。
+- 同步脚本在 root 下运行时会自动 chown 到与 plugins 一致，并执行 chmod -R a+rX；非 root 若属主不一致会打印 sudo chown/chmod 命令。
+- 不需要自动 chown 时可：SYNC_PLUGINS_CHOWN=0 bash scripts/sync-plugins-to-discourse.sh
+- 若检测到多个 ~/discourse/plugins（多用户），脚本会退出并提示你设置其一：
+    export DISCOURSE_PLUGINS_DIR=/home/你的用户名/discourse/plugins
+    bash scripts/sync-plugins-to-discourse.sh
+- 同步后务必重启 Ember（见下），浏览器对 localhost:4200 建议硬刷新 Ctrl+Shift+R。
+
+0b) 插件 JS 修改后的标准闭环（自己修复、验证时按顺序做）
+| 步骤 | 动作 |
+| 1 | 在本仓库（discouse-plugins）改代码并保存 |
+| 2 | WSL：`cd /mnt/e/project/discouse-plugins`（路径按你机器改），执行 `DISCOURSE_PLUGINS_DIR=/root/discourse/plugins bash scripts/sync-plugins-to-discourse.sh`（非 root 目录可改用你的 `~/discourse/plugins`） |
+| 3 | （可选）若 Broccoli 报 EACCES：`SYNC_PLUGINS_CHMOD_777=1 DISCOURSE_PLUGINS_DIR=/root/discourse/plugins bash scripts/fix-plugin-permissions.sh` |
+| 4 | WSL 宿主进入 Discourse 根目录（如 `cd /root/discourse`），**重启** `./d/ember-cli`（改插件 JS 后务必重启或等完整重建）。**勿**在容器内 `docker exec … ./d/ember-cli`（会报 docker: not found） |
+| 5 | 浏览器硬刷新（Ctrl+Shift+R）；按功能点验收（用户卡、Activity 页等） |
+| 6 | 仍失败：看 Ember 终端或 `/tmp/ember.log` 尾部；确认只跑一套 ember；必要时 `bash scripts/diagnose-plugin-eacces.sh`（权限类） |
+
+排障（用户卡 / UserCard）：控制台若出现 `Cannot override the computed property user`、`PluginConnector.setupComponent (rt-collections-todo.js`：
+检查 `plugins/rt-collections-todo/.../connectors/user-card-metadata/rt-collections-todo.js` 是否写了 `component.set("user", …)`。`user` 已由 outlet 注入，应删除该 setupComponent，或改用其它字段名（如 `cardUser`）并同步改模板。
+
+排障（侧栏转盘）：`There is no route named …` — 侧栏 **只设 `href: getURL("/lucky-spin")`，不要设 `route`**。若点击后 **404** 且 Network 有 `permalink-check.json?path=/lucky-spin`：说明 URL 进了 **unknown**（Ember 未匹配路由）。转盘插件须有独立 **`rt-lucky-spin-route-map.js`**（requirejs 键须 **以 `route-map` 结尾**，可用 `Object.keys(requirejs.entries).filter(k=>k.endsWith('route-map'))` 自查）；**勿**在 initializer 里 import 它（会并进同一 AMD 模块 → 上述过滤结果缺本插件项 → 404）。改后 **同步插件、删 `app/assets/generated/rt-lucky-spin`（可选但推荐）、重启 Rails（重编插件 JS）+ 重启 Ember**，再 **硬刷新**。若 **直访 :3000/lucky-spin 也是 404**（无 permalink-check）：多为站点设置 **`rt_lucky_spin_enabled`** 关闭（`LuckySpinHtmlController` 会 `NotFound`）。若仅有 **permalink-check found: false** 而 :3000 正常：曾用 `enabled_site_setting` 会导致关插件时 **不加载 JS**；本仓库已去掉该声明，路由始终注册，请 **同步插件、重启 Rails+Ember** 后 **整页刷新**。
+
+排障（界面全是 i18n 占位符如 rt_lucky_spin.menu_title）：
+  - 插件文案必须在 **`plugins/<名>/config/locales/client.<语言>.yml`**（如 `client.en.yml`、`client.zh_CN.yml`），且顶层为 `en:` / `zh_CN:`，下面一层 **`js:`**，再写键（与 `i18n("rt_xxx.key")` 对应）。**不要**只放在 `assets/javascripts/discourse/locale/`（Discourse 不会合并进前端）。
+  - 新增或修改上述 yml 后：**重启 Rails**（`./d/rails s` 进程），再硬刷新浏览器；仅重启 Ember 不够。
+
+排障（控制台其它常见项）：
+- `The icon "xxx" is missing from the SVG subset`：`d-icon` 只能用 Discourse 打包进子集的图标名；Activity Tab 等处勿用未收录名（如 `box`），可改用 `bookmark`、`list` 等常见名。
+- `Importing inject from @ember/service is deprecated`：改为 `import { service } from "@ember/service";`，装饰器仍为 `@service`。
+- 直开 `http://127.0.0.1:3000/lucky-spin` 报 **Routing Error**：插件需在 Rails 注册与 Ember 一致的 HTML 路由（本仓库已提供 `LuckySpinHtmlController`）；改 `plugin.rb` 后 **重启 Rails**。开发环境仍建议主要用 **:4200**；仅 :3000 时会走 `ember_cli` 布局提示启动 Ember。
+- `GET /rt-lucky-spin/state` 500：先 **重启 Rails**（改插件 .rb 后必做）。若 `responseText` 含 **NoMethodError** 且提到 `ensure_logged_in`：**Guardian 没有 `ensure_logged_in`**，应使用 `ApplicationController` 的 `before_action :ensure_logged_in`，或 `guardian.ensure_authenticated!`（EnsureMagic 只认 `ensure_*!`）。若仍 500：看 `/tmp/rails.log` 栈。另：Ember 代理可能触发 `check_xhr`；插件已对 `state`/`history` 等 `skip_before_action :check_xhr` 并设 `defaults: { format: :json }`。
+- 插件 **Ruby / 新增迁移** 后：在 Discourse 根目录执行 `./d/rake db:migrate`，保证 `rt_lucky_spin_*` 等表已创建。
+
+1) 停止 / 启动 Discourse（最省事）
+在 WSL 里进入你的源码目录（~/discourse 或 /root/discourse，与你自己放代码的位置一致）：
+
+停止（关掉整个 dev 容器）
+cd ~/discourse
+# 若在 root 下：cd /root/discourse
+./d/shutdown_dev
+启动（重新拉起 dev 容器）
+cd ~/discourse
+# 若在 root 下：cd /root/discourse
+./d/boot_dev
+若提示容器名 discourse_dev 已存在：说明容器还在，直接启动即可：
+  docker start discourse_dev
+如果是第一次启动/你需要重新迁移数据库、创建 admin：用 --init
+./d/boot_dev --init
+只停前端/后端进程（不关容器）
+如果你只是想临时停：
+
+停 Rails：Ctrl+C（你运行 ./d/rails s 的那个终端）
+停 Ember：Ctrl+C（你运行 ./d/ember-cli 的那个终端）
+容器还在的话，过段时间你再重新开这两个命令即可。
+（改完插件 JS/GJS 后，至少重启一次 ./d/ember-cli，避免缓存旧 bundle。）
+
+2) 启动（让页面可用的常用方式）
+当你容器启动后，再分别启动：
+
+cd ~/discourse
+# 若在 root 下：cd /root/discourse
+./d/rails s
+./d/ember-cli
+然后访问：http://localhost:4200
+
+后台启动（nohup）时不要写在一行：`cd /root/discourse && ./d/rails s &` 在 bash 里会把「cd + rails」整段放到后台子 shell，后面的命令可能不在源码目录，导致 `./d/ember-cli` 找不到。请分两行：
+  cd /root/discourse
+  nohup ./d/rails s > /tmp/rails.log 2>&1 &
+  nohup ./d/ember-cli > /tmp/ember.log 2>&1 &
+若 4200 一直 Build Error / EACCES，可能是重复起了多个 Ember：可先 `docker restart discourse_dev`，再按上面只启动一套 rails + ember。
+若浏览器打不开、curl 报 `Connection reset by peer` 但 `ss` 仍显示 4200 在监听：多半是 Ember 进程已挂，只剩僵尸端口映射；在 WSL 里 `cd /root/discourse`（或你的 discourse 目录）后重新执行 `./d/ember-cli`（或 `nohup ./d/ember-cli > /tmp/ember.log 2>&1 &`），等终端出现 Build successful 再刷新。
+快速自检（WSL）：`curl -sI http://127.0.0.1:3000/` 应 200；`curl -sI http://127.0.0.1:4200/` 若失败或 reset，只重启 Ember 即可（Rails 一般仍正常）。
+
+3) 测试插件流程（RSpec + QUnit/Acceptance）
+假设你的插件叫 demo-plugin（实际以你插件目录名为准）。
+
+A. 后端 Ruby 测试（RSpec）
+全量（比较慢）：
+./d/rake autospec
+只测某个插件：
+./d/rake "plugin:spec[demo-plugin]"
+你这个骨架插件如果还没写 spec，可能会提示 No specs found，属于正常。

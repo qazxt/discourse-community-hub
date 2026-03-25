@@ -1,0 +1,9 @@
+{
+  "name": "community-hub",
+  "about": "Robotime Community Hub dynamic configuration backend",
+  "authors": "Discourse Community Hub",
+  "version": "0.1.0",
+  "license_url": "https://opensource.org/licenses/MIT",
+  "minimum_discourse_version": "3.0.0"
+}
+

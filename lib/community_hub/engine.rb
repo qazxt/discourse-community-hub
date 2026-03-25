@@ -1,0 +1,27 @@
+# frozen_string_literal: true
+
+module CommunityHub
+  class Engine < ::Rails::Engine
+    engine_name PLUGIN_NAME
+    isolate_namespace CommunityHub
+  end
+
+  Engine.routes.draw do
+    get "/hub-config.json" => "config#show"
+
+    # Admin UI API (仅管理员可访问)
+    get "/admin/plugins/community-hub/config" => "admin/config#index"
+    put "/admin/plugins/community-hub/nav_items" => "admin/config#save_nav_items"
+    put "/admin/plugins/community-hub/hero_banners" => "admin/config#save_hero_banners"
+    put "/admin/plugins/community-hub/sidebar_widgets" => "admin/config#save_sidebar_widgets"
+
+    delete "/admin/plugins/community-hub/nav_items/:id" => "admin/config#destroy_nav_item"
+    delete "/admin/plugins/community-hub/hero_banners/:id" => "admin/config#destroy_hero_banner"
+    delete "/admin/plugins/community-hub/sidebar_widgets/:id" => "admin/config#destroy_sidebar_widget"
+  end
+end
+
+Discourse::Application.routes.append do
+  mount ::CommunityHub::Engine, at: "/"
+end
+
