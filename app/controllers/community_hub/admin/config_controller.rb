@@ -7,70 +7,95 @@ module CommunityHub
 
       def index
         render json: {
-          nav_items: CommunityHub::HubNavItem.order(:sort_order).map { |x| serialize_nav_item(x) },
-          hero_banners: CommunityHub::HubHeroBanner.order(:sort_order).map { |x| serialize_hero_banner(x) },
-          sidebar_widgets: CommunityHub::HubSidebarWidget.order(:sort_order).map { |x| serialize_sidebar_widget(x) }
+          nav_items: read_store("nav_items", default_nav_items),
+          hero_banners: read_store("hero_banners", []),
+          filter_quick_tags: read_store("filter_quick_tags", []),
+          sidebar_section_title: read_store("sidebar_section_title", nil),
+          sidebar_view_all: read_store("sidebar_view_all", nil),
+          sidebar_widgets: read_store("sidebar_widgets", [])
         }
       end
 
       def save_nav_items
-        items = params.require(:items)
-        CommunityHub::HubNavItem.transaction do
-          items.each do |attrs|
-            upsert_nav_item(attrs)
-          end
-        end
-
+        items = normalize_items(params.require(:items))
+        write_store("nav_items", normalize_nav_items(items))
         render json: { ok: true }
-      rescue ActionController::ParameterMissing, ActiveRecord::RecordInvalid => e
+      rescue ActionController::ParameterMissing => e
         render json: { ok: false, error: e.message }, status: :unprocessable_entity
       end
 
       def save_hero_banners
-        items = params.require(:items)
-        CommunityHub::HubHeroBanner.transaction do
-          items.each do |attrs|
-            upsert_hero_banner(attrs)
-          end
+        items = normalize_items(params.require(:items))
+        write_store("hero_banners", normalize_hero_banners(items))
+        render json: { ok: true }
+      rescue ActionController::ParameterMissing => e
+        render json: { ok: false, error: e.message }, status: :unprocessable_entity
+      end
+
+      def save_filter_quick_tags
+        items = normalize_items(params.require(:items))
+        write_store("filter_quick_tags", normalize_filter_quick_tags(items))
+        render json: { ok: true }
+      rescue ActionController::ParameterMissing => e
+        render json: { ok: false, error: e.message }, status: :unprocessable_entity
+      end
+
+      def save_sidebar_extras
+        write_store("sidebar_section_title", params[:sidebar_section_title].to_s.presence)
+
+        va = normalize_view_all_param(params[:sidebar_view_all])
+        if va["url"].blank?
+          write_store("sidebar_view_all", nil)
+        else
+          write_store(
+            "sidebar_view_all",
+            {
+              "label" => va["label"].to_s.presence,
+              "url" => va["url"].to_s,
+              "is_external" => bool_param(va["is_external"])
+            }
+          )
         end
 
         render json: { ok: true }
-      rescue ActionController::ParameterMissing, ActiveRecord::RecordInvalid => e
+      rescue StandardError => e
         render json: { ok: false, error: e.message }, status: :unprocessable_entity
       end
 
       def save_sidebar_widgets
-        items = params.require(:items)
-        CommunityHub::HubSidebarWidget.transaction do
-          items.each do |attrs|
-            upsert_sidebar_widget(attrs)
-          end
-        end
-
+        items = normalize_items(params.require(:items))
+        write_store("sidebar_widgets", normalize_sidebar_widgets(items))
         render json: { ok: true }
-      rescue ActionController::ParameterMissing, ActiveRecord::RecordInvalid => e
+      rescue ActionController::ParameterMissing => e
         render json: { ok: false, error: e.message }, status: :unprocessable_entity
       end
 
       def destroy_nav_item
-        CommunityHub::HubNavItem.find(params.require(:id)).destroy!
+        id = params.require(:id).to_i
+        items = read_store("nav_items", default_nav_items).reject { |x| x["id"].to_i == id }
+        write_store("nav_items", items)
         render json: { ok: true }
-      rescue ActiveRecord::RecordNotFound => e
-        render json: { ok: false, error: e.message }, status: :not_found
       end
 
       def destroy_hero_banner
-        CommunityHub::HubHeroBanner.find(params.require(:id)).destroy!
+        id = params.require(:id).to_i
+        items = read_store("hero_banners", []).reject { |x| x["id"].to_i == id }
+        write_store("hero_banners", items)
         render json: { ok: true }
-      rescue ActiveRecord::RecordNotFound => e
-        render json: { ok: false, error: e.message }, status: :not_found
+      end
+
+      def destroy_filter_quick_tag
+        id = params.require(:id).to_i
+        items = read_store("filter_quick_tags", []).reject { |x| x["id"].to_i == id }
+        write_store("filter_quick_tags", items)
+        render json: { ok: true }
       end
 
       def destroy_sidebar_widget
-        CommunityHub::HubSidebarWidget.find(params.require(:id)).destroy!
+        id = params.require(:id).to_i
+        items = read_store("sidebar_widgets", []).reject { |x| x["id"].to_i == id }
+        write_store("sidebar_widgets", items)
         render json: { ok: true }
-      rescue ActiveRecord::RecordNotFound => e
-        render json: { ok: false, error: e.message }, status: :not_found
       end
 
       private
@@ -79,94 +104,102 @@ module CommunityHub
         ActiveModel::Type::Boolean.new.cast(val)
       end
 
-      def upsert_nav_item(attrs)
-        id = attrs[:id].presence
-        record = id ? CommunityHub::HubNavItem.find(id) : CommunityHub::HubNavItem.new
-
-        record.assign_attributes(
-          label: attrs[:label],
-          url: attrs[:url],
-          icon_name: attrs[:icon_name],
-          is_external: bool_param(attrs[:is_external]),
-          sort_order: attrs[:sort_order].to_i,
-          active: attrs.key?(:active) ? bool_param(attrs[:active]) : true
-        )
-
-        record.save!
+      def normalize_items(items)
+        items.map do |x|
+          h = x.respond_to?(:to_unsafe_h) ? x.to_unsafe_h : x.to_h
+          h.stringify_keys
+        end
       end
 
-      def upsert_hero_banner(attrs)
-        id = attrs[:id].presence
-        record = id ? CommunityHub::HubHeroBanner.find(id) : CommunityHub::HubHeroBanner.new
-
-        record.assign_attributes(
-          title: attrs[:title],
-          subtitle: attrs[:subtitle],
-          image_url: attrs[:image_url],
-          link_url: attrs[:link_url],
-          bg_color: attrs[:bg_color] || "#f6ebe3",
-          style_type: attrs[:style_type],
-          sort_order: attrs[:sort_order].to_i,
-          active: attrs.key?(:active) ? bool_param(attrs[:active]) : true
-        )
-
-        record.save!
+      def normalize_view_all_param(view_all)
+        h =
+          if view_all.is_a?(ActionController::Parameters)
+            view_all.permit(:label, :url, :is_external).to_h
+          elsif view_all.is_a?(Hash)
+            view_all.stringify_keys.slice("label", "url", "is_external")
+          else
+            {}
+          end
+        h.stringify_keys
       end
 
-      def upsert_sidebar_widget(attrs)
-        id = attrs[:id].presence
-        record = id ? CommunityHub::HubSidebarWidget.find(id) : CommunityHub::HubSidebarWidget.new
-
-        record.assign_attributes(
-          title: attrs[:title],
-          image_url: attrs[:image_url],
-          link_url: attrs[:link_url],
-          widget_type: attrs[:widget_type],
-          sort_order: attrs[:sort_order].to_i,
-          active: attrs.key?(:active) ? bool_param(attrs[:active]) : true
-        )
-
-        record.save!
+      def write_store(key, value)
+        PluginStore.set(CommunityHub::PLUGIN_NAME, key, value)
+        Rails.cache.delete(CommunityHub::CACHE_KEY)
       end
 
-      def serialize_nav_item(x)
-        {
-          id: x.id,
-          label: x.label,
-          url: x.url,
-          icon_name: x.icon_name,
-          is_external: x.is_external,
-          sort_order: x.sort_order,
-          active: x.active
-        }
+      def read_store(key, default)
+        PluginStore.get(CommunityHub::PLUGIN_NAME, key) || default
       end
 
-      def serialize_hero_banner(x)
-        {
-          id: x.id,
-          title: x.title,
-          subtitle: x.subtitle,
-          image_url: x.image_url,
-          link_url: x.link_url,
-          bg_color: x.bg_color,
-          style_type: x.style_type,
-          sort_order: x.sort_order,
-          active: x.active
-        }
+      def normalize_nav_items(items)
+        items.each_with_index.map do |x, idx|
+          h = x.stringify_keys
+          {
+            "id" => (h["id"].presence || Time.now.to_f * 1000 + idx).to_i,
+            "label" => h["label"].to_s,
+            "url" => h["url"].to_s,
+            "icon_name" => h["icon_name"].to_s,
+            "is_external" => bool_param(h["is_external"]),
+            "sort_order" => h["sort_order"].to_i,
+            "active" => h.key?("active") ? bool_param(h["active"]) : true
+          }
+        end.sort_by { |x| x["sort_order"] }
       end
 
-      def serialize_sidebar_widget(x)
-        {
-          id: x.id,
-          title: x.title,
-          image_url: x.image_url,
-          link_url: x.link_url,
-          widget_type: x.widget_type,
-          sort_order: x.sort_order,
-          active: x.active
-        }
+      def normalize_filter_quick_tags(items)
+        items.each_with_index.map do |x, idx|
+          h = x.stringify_keys
+          {
+            "id" => (h["id"].presence || Time.now.to_f * 1000 + idx).to_i,
+            "label" => h["label"].to_s,
+            "url" => h["url"].to_s,
+            "is_external" => h.key?("is_external") ? bool_param(h["is_external"]) : false,
+            "sort_order" => h["sort_order"].to_i,
+            "active" => h.key?("active") ? bool_param(h["active"]) : true
+          }
+        end.sort_by { |x| x["sort_order"] }
+      end
+
+      def normalize_hero_banners(items)
+        items.each_with_index.map do |x, idx|
+          h = x.stringify_keys
+          {
+            "id" => (h["id"].presence || Time.now.to_f * 1000 + idx).to_i,
+            "title" => h["title"].to_s,
+            "subtitle" => h["subtitle"].to_s,
+            "image_url" => h["image_url"].to_s,
+            "link_url" => h["link_url"].to_s,
+            "bg_color" => h["bg_color"].presence || "#f6ebe3",
+            "style_type" => h["style_type"].to_s,
+            "sort_order" => h["sort_order"].to_i,
+            "active" => h.key?("active") ? bool_param(h["active"]) : true
+          }
+        end.sort_by { |x| x["sort_order"] }
+      end
+
+      def normalize_sidebar_widgets(items)
+        items.each_with_index.map do |x, idx|
+          h = x.stringify_keys
+          {
+            "id" => (h["id"].presence || Time.now.to_f * 1000 + idx).to_i,
+            "title" => h["title"].to_s,
+            "image_url" => h["image_url"].to_s,
+            "link_url" => h["link_url"].to_s,
+            "widget_type" => h["widget_type"].to_s,
+            "sort_order" => h["sort_order"].to_i,
+            "active" => h.key?("active") ? bool_param(h["active"]) : true
+          }
+        end.sort_by { |x| x["sort_order"] }
+      end
+
+      def default_nav_items
+        [
+          { "id" => 1, "label" => "Help", "url" => "/help", "icon_name" => "", "is_external" => false, "sort_order" => 0, "active" => true },
+          { "id" => 2, "label" => "Community Perks", "url" => "/community-perks", "icon_name" => "", "is_external" => false, "sort_order" => 1, "active" => true },
+          { "id" => 3, "label" => "About", "url" => "/about", "icon_name" => "", "is_external" => false, "sort_order" => 2, "active" => true }
+        ]
       end
     end
   end
 end
-

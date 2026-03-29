@@ -1,28 +1,16 @@
 为自定义主题的前端展示打造一个“配置中心”，让管理员无需写代码即可管理所有动态内容。
-1. 数据库设计 (Migration)
-在 db/migrate 中创建三张表，分别对应三个可配置区域。为了灵活性，建议字段通用化。
-表 1: hub_hero_banners (中间大轮播)
-title (string): 标题 (e.g., "Official Events")
-subtitle (string): 副标题/日期 (e.g., "10.20-12.20")
-image_url (string): 背景图 URL
-bg_color (string): 兜底背景色（默认 `#f6ebe3`）
-link_url (string): 跳转链接 (分类路径或外部 URL)
-style_type (string): 样式类型 (e.g., "gradient_blue", "image_cover") —— 预留扩展
-sort_order (integer): 排序
-active (boolean): 是否启用
-表 2: hub_nav_items (顶部黑色导航栏)
-label (string): 显示文字 (e.g., "Help", "Buy")
-url (string): 链接地址
-icon_name (string): 图标类名 (可选，如 "fas fa-star")
-is_external (boolean): 是否新窗口打开
-active (boolean): 是否启用
-sort_order (integer): 排序
-表 3: hub_sidebar_widgets (左侧小轮播/公告)
-title (string): 标题 (e.g., "Sweet Shack")
-image_url (string): 展示图片
-link_url (string): 跳转链接
-widget_type (string): 组件类型 (e.g., "carousel", "static_banner")
-sort_order (integer): 排序
+1. 存储方案（无需 Migration）
+本插件使用 Discourse 的 `PluginStore` 持久化三类配置（导航 / Hero 轮播 / 侧栏小部件），因此**不需要**创建业务表，也无需执行插件相关的 `db:migrate`。
+
+存储键（namespace 为 `community-hub`）：
+- `nav_items`: 顶部导航栏（数组）
+- `hero_banners`: Hero 轮播（数组）
+- `filter_quick_tags`: 列表页预显标签（数组）
+- `sidebar_section_title`: 侧栏活动区标题（字符串，可选）
+- `sidebar_view_all`: 侧栏「查看全部」链接（对象，可选）
+- `sidebar_widgets`: 侧栏小部件幻灯片（数组）
+
+`GET /hub-config.json` 还会在未写入插件存储时，尝试从默认主题的 `robotime_*` 主题设置合并默认值（见 `PLUGIN-INTERFACE.md`）。
 2. 后台管理界面 (Admin UI)
 利用 Discourse 的 Admin 路由系统，在 /admin/plugins/community-hub 下构建界面。
 技术栈: Ember.js (Discourse 原生前端框架)。
@@ -43,19 +31,14 @@ ruby
 
 
 def show
-  # 只查询 active=true 的数据，并按 sort_order 排序
-  config = {
-    nav_items: HubNavItem.active.order(:sort_order).as_json,
-    hero_banners: HubHeroBanner.active.order(:sort_order).as_json,
-    sidebar_widgets: HubSidebarWidget.active.order(:sort_order).as_json
-  }
-  render json: config
+  # 从 PluginStore 读取，筛 active=true，并按 sort_order 排序
+  # 返回字段严格对齐 PLUGIN-INTERFACE.md
 end
 缓存: 务必使用 `Rails.cache.fetch("community-hub:hub_config", expires_in: 1.hour)`，避免每次刷新页面都查库。
 
 ## 安装与启用
 1. 将本插件放入 Discourse 的 `plugins/` 目录，例如：`plugins/community-hub`
-2. 重启 Discourse 后执行迁移：`bundle exec rake db:migrate`
+2. 重启 Discourse
 3. 在 Discourse Admin 后台开启站点设置：`community_hub_enabled`
 
 ## 后台管理入口
@@ -80,6 +63,15 @@ end
       "link_url": "/c/user-guide-perks"
     }
   ],
+  "filter_quick_tags": [
+    { "label": "Diy", "url": "/tag/diy", "is_external": false }
+  ],
+  "sidebar_section_title": "Official Events",
+  "sidebar_view_all": {
+    "label": "View All Events",
+    "url": "/c/official-events",
+    "is_external": false
+  },
   "sidebar_widgets": [
     {
       "title": "Sweet Shack",

@@ -9,12 +9,16 @@ export default class AdminPluginsCommunityHubController extends Controller {
 
   @tracked navItems = [];
   @tracked heroBanners = [];
+  @tracked filterQuickTags = [];
   @tracked sidebarWidgets = [];
+
+  @tracked sidebarSectionTitle = "";
+  @tracked sidebarViewAll = { label: "", url: "", is_external: false };
 
   @tracked categories = [];
 
   @tracked modalOpen = false;
-  @tracked modalType = null; // "nav" | "hero" | "sidebar"
+  @tracked modalType = null; // "nav" | "hero" | "filter" | "sidebar"
   @tracked modalDraft = null;
   @tracked modalTarget = null;
   @tracked uploadError = null;
@@ -34,6 +38,10 @@ export default class AdminPluginsCommunityHubController extends Controller {
     return this.modalType === "hero";
   }
 
+  get isFilterModal() {
+    return this.modalType === "filter";
+  }
+
   get isSidebarModal() {
     return this.modalType === "sidebar";
   }
@@ -46,6 +54,7 @@ export default class AdminPluginsCommunityHubController extends Controller {
   sectionProp(type) {
     if (type === "nav") return "navItems";
     if (type === "hero") return "heroBanners";
+    if (type === "filter") return "filterQuickTags";
     return "sidebarWidgets";
   }
 
@@ -56,7 +65,19 @@ export default class AdminPluginsCommunityHubController extends Controller {
 
     this.navItems = data.nav_items || [];
     this.heroBanners = data.hero_banners || [];
+    this.filterQuickTags = data.filter_quick_tags || [];
     this.sidebarWidgets = data.sidebar_widgets || [];
+
+    this.sidebarSectionTitle = data.sidebar_section_title || "";
+    const va = data.sidebar_view_all;
+    this.sidebarViewAll = va
+      ? {
+          label: va.label || "",
+          url: va.url || "",
+          is_external: !!va.is_external,
+        }
+      : { label: "", url: "", is_external: false };
+
     this.isLoading = false;
 
     this.loadCategories();
@@ -106,7 +127,20 @@ export default class AdminPluginsCommunityHubController extends Controller {
       if (Number.isNaN(toIndex) || !toSection || toSection !== section) return;
       if (fromIndex === toIndex) return;
 
-      const prop = section === "nav_items" ? "navItems" : section === "hero_banners" ? "heroBanners" : "sidebarWidgets";
+      const propMap = {
+        nav_items: "navItems",
+        hero_banners: "heroBanners",
+        filter_quick_tags: "filterQuickTags",
+        sidebar_widgets: "sidebarWidgets",
+      };
+      const saveTypeMap = {
+        nav_items: "nav",
+        hero_banners: "hero",
+        filter_quick_tags: "filter",
+        sidebar_widgets: "sidebar",
+      };
+
+      const prop = propMap[section];
       const arr = this[prop] || [];
       const next = arr.slice();
       const [moved] = next.splice(fromIndex, 1);
@@ -116,14 +150,16 @@ export default class AdminPluginsCommunityHubController extends Controller {
       });
       this[prop] = next;
 
-      const saveType = section === "nav_items" ? "nav" : section === "hero_banners" ? "hero" : "sidebar";
-      this.saveCategory(saveType);
+      this.saveCategory(saveTypeMap[section]);
     });
   }
 
   defaultDraft(type, sortOrder = 0) {
     if (type === "nav") {
       return { id: null, label: "", url: "", icon_name: "", is_external: false, sort_order: sortOrder, active: true };
+    }
+    if (type === "filter") {
+      return { id: null, label: "", url: "", is_external: false, sort_order: sortOrder, active: true };
     }
     if (type === "hero") {
       return {
@@ -135,7 +171,7 @@ export default class AdminPluginsCommunityHubController extends Controller {
         bg_color: "#f6ebe3",
         style_type: "",
         sort_order: sortOrder,
-        active: true
+        active: true,
       };
     }
     return { id: null, title: "", image_url: "", link_url: "", widget_type: "", sort_order: sortOrder, active: true };
@@ -179,7 +215,9 @@ export default class AdminPluginsCommunityHubController extends Controller {
         ? `/admin/plugins/community-hub/nav_items/${id}.json`
         : type === "hero"
           ? `/admin/plugins/community-hub/hero_banners/${id}.json`
-          : `/admin/plugins/community-hub/sidebar_widgets/${id}.json`;
+          : type === "filter"
+            ? `/admin/plugins/community-hub/filter_quick_tags/${id}.json`
+            : `/admin/plugins/community-hub/sidebar_widgets/${id}.json`;
 
     await ajax(api, { type: "DELETE" });
     await this.loadConfig();
@@ -201,7 +239,7 @@ export default class AdminPluginsCommunityHubController extends Controller {
       method: "POST",
       credentials: "same-origin",
       headers: { "X-CSRF-Token": this.csrfToken() },
-      body: formData
+      body: formData,
     });
 
     const data = await res.json();
@@ -242,7 +280,9 @@ export default class AdminPluginsCommunityHubController extends Controller {
         ? "/admin/plugins/community-hub/nav_items.json"
         : type === "hero"
           ? "/admin/plugins/community-hub/hero_banners.json"
-          : "/admin/plugins/community-hub/sidebar_widgets.json";
+          : type === "filter"
+            ? "/admin/plugins/community-hub/filter_quick_tags.json"
+            : "/admin/plugins/community-hub/sidebar_widgets.json";
 
     const prop = this.sectionProp(type);
     const items = (this[prop] || []).map((x) => ({
@@ -260,11 +300,23 @@ export default class AdminPluginsCommunityHubController extends Controller {
       link_url: x.link_url,
       bg_color: x.bg_color,
       style_type: x.style_type,
-      widget_type: x.widget_type
+      widget_type: x.widget_type,
     }));
 
     await ajax(api, { type: "PUT", data: { items } });
 
+    await this.loadConfig();
+  }
+
+  @action
+  async saveSidebarExtras() {
+    await ajax("/admin/plugins/community-hub/sidebar_extras.json", {
+      type: "PUT",
+      data: {
+        sidebar_section_title: this.sidebarSectionTitle,
+        sidebar_view_all: this.sidebarViewAll,
+      },
+    });
     await this.loadConfig();
   }
 
@@ -286,4 +338,3 @@ export default class AdminPluginsCommunityHubController extends Controller {
     }
   }
 }
-

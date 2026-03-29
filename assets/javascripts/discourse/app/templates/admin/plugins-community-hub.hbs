@@ -42,6 +42,41 @@
     </div>
 
     <div class="community-hub-section">
+      <h3>Filter Quick Tags</h3>
+      <div class="community-hub-actions">
+        <button type="button" {{on "click" (fn this.addNew "filter")}}>Add</button>
+        <button type="button" {{on "click" (fn this.saveCategory "filter")}}>Save</button>
+      </div>
+
+      <ul>
+        {{#each this.filterQuickTags as |item idx|}}
+          <li class="community-hub-item" draggable="true" data-section="filter_quick_tags" data-index={{idx}}>
+            <span>{{idx}}. {{item.label}}</span>
+            <span>({{item.url}})</span>
+            <button type="button" {{on "click" (fn this.openModal "filter" item)}}>Edit</button>
+            <button type="button" {{on "click" (fn this.deleteItem "filter" item.id)}}>Delete</button>
+          </li>
+        {{/each}}
+      </ul>
+    </div>
+
+    <div class="community-hub-section">
+      <h3>Sidebar Section (title + view all)</h3>
+      <p>Overrides theme defaults when saved. Leave URL empty to hide “view all” in API.</p>
+      <label>Section title</label>
+      <Input @value={{this.sidebarSectionTitle}} />
+      <label>View all label</label>
+      <Input @value={{this.sidebarViewAll.label}} />
+      <label>View all URL</label>
+      <Input @value={{this.sidebarViewAll.url}} />
+      <label>External</label>
+      <Input @type="checkbox" @checked={{this.sidebarViewAll.is_external}} />
+      <div class="community-hub-actions">
+        <button type="button" {{on "click" this.saveSidebarExtras}}>Save sidebar header</button>
+      </div>
+    </div>
+
+    <div class="community-hub-section">
       <h3>Sidebar Widgets</h3>
       <div class="community-hub-actions">
         <button type="button" {{on "click" (fn this.addNew "sidebar")}}>Add</button>
@@ -67,6 +102,7 @@
       <h3>
         {{#if this.isNavModal}}Edit Navigation Item{{/if}}
         {{#if this.isHeroModal}}Edit Hero Banner{{/if}}
+        {{#if this.isFilterModal}}Edit Filter Quick Tag{{/if}}
         {{#if this.isSidebarModal}}Edit Sidebar Widget{{/if}}
       </h3>
 
@@ -80,6 +116,20 @@
 
           <label>Icon Name</label>
           <Input @value={{this.modalDraft.icon_name}} />
+
+          <label>External Link</label>
+          <Input @type="checkbox" @checked={{this.modalDraft.is_external}} />
+
+          <label>Active</label>
+          <Input @type="checkbox" @checked={{this.modalDraft.active}} />
+        {{/if}}
+
+        {{#if this.isFilterModal}}
+          <label>Label</label>
+          <Input @value={{this.modalDraft.label}} />
+
+          <label>URL</label>
+          <Input @value={{this.modalDraft.url}} />
 
           <label>External Link</label>
           <Input @type="checkbox" @checked={{this.modalDraft.is_external}} />
