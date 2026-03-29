@@ -10,7 +10,8 @@ require_relative "lib/community_hub"
 enabled_site_setting :community_hub_enabled
 
 after_initialize do
-  add_admin_route "community_hub.title", "community-hub"
+  # 管理 UI 入口改为 /admin/community-hub + 侧边栏链接（见 community-hub-admin-sidebar initializer）
+  # 不再使用 add_admin_route：Discourse 新版「已安装插件」页的 outlet 与 adminPlugins.* 子路由不兼容，易导致白屏。
 
   # 公开 API
   Discourse::Application.routes.append do

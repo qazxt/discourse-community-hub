@@ -12,7 +12,7 @@
 
 `GET /hub-config.json` 还会在未写入插件存储时，尝试从默认主题的 `robotime_*` 主题设置合并默认值（见 `PLUGIN-INTERFACE.md`）。
 2. 后台管理界面 (Admin UI)
-利用 Discourse 的 Admin 路由系统，在 /admin/plugins/community-hub 下构建界面。
+管理界面在 **`/admin/community-hub`**，并从管理后台**侧边栏**进入（与 `adminPlugins` 插件 Tab 解耦，避免新版插件页 outlet 白屏）。
 技术栈: Ember.js (Discourse 原生前端框架)。
 功能实现:
 列表页: 展示当前所有配置项，支持拖拽排序。
@@ -42,7 +42,7 @@ end
 3. 在 Discourse Admin 后台开启站点设置：`community_hub_enabled`
 
 ## 后台管理入口
-- 管理页面：`/admin/plugins/community-hub`
+- 管理页面：`/admin/community-hub`（侧边栏「社区配置中心」）
 - 功能要点：
   - 三个区块分别支持增删改
   - 支持拖拽排序（拖拽结束后会立刻保存到 `sort_order`，并清理接口缓存）

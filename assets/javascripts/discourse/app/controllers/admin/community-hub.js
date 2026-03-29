@@ -4,7 +4,7 @@ import { tracked } from "@glimmer/tracking";
 import { scheduleOnce } from "@ember/runloop";
 import { ajax } from "discourse/lib/ajax";
 
-export default class AdminPluginsCommunityHubController extends Controller {
+export default class AdminCommunityHubController extends Controller {
   @tracked isLoading = true;
 
   @tracked navItems = [];
@@ -27,6 +27,8 @@ export default class AdminPluginsCommunityHubController extends Controller {
 
   constructor() {
     super(...arguments);
+    // eslint-disable-next-line no-console
+    console.info("[community-hub] AdminCommunityHubController constructed");
     this.loadConfig();
   }
 
