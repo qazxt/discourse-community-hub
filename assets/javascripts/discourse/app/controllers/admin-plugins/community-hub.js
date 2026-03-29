@@ -61,27 +61,32 @@ export default class AdminPluginsCommunityHubController extends Controller {
   async loadConfig() {
     this.isLoading = true;
 
-    const data = await ajax("/admin/plugins/community-hub/config.json");
+    try {
+      const data = await ajax("/admin/plugins/community-hub/config.json");
 
-    this.navItems = data.nav_items || [];
-    this.heroBanners = data.hero_banners || [];
-    this.filterQuickTags = data.filter_quick_tags || [];
-    this.sidebarWidgets = data.sidebar_widgets || [];
+      this.navItems = data.nav_items || [];
+      this.heroBanners = data.hero_banners || [];
+      this.filterQuickTags = data.filter_quick_tags || [];
+      this.sidebarWidgets = data.sidebar_widgets || [];
 
-    this.sidebarSectionTitle = data.sidebar_section_title || "";
-    const va = data.sidebar_view_all;
-    this.sidebarViewAll = va
-      ? {
-          label: va.label || "",
-          url: va.url || "",
-          is_external: !!va.is_external,
-        }
-      : { label: "", url: "", is_external: false };
+      this.sidebarSectionTitle = data.sidebar_section_title || "";
+      const va = data.sidebar_view_all;
+      this.sidebarViewAll = va
+        ? {
+            label: va.label || "",
+            url: va.url || "",
+            is_external: !!va.is_external,
+          }
+        : { label: "", url: "", is_external: false };
 
-    this.isLoading = false;
-
-    this.loadCategories();
-    scheduleOnce("afterRender", this, this.attachDnDHandlers);
+      this.loadCategories();
+      scheduleOnce("afterRender", this, this.attachDnDHandlers);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error("[community-hub] loadConfig failed:", e);
+    } finally {
+      this.isLoading = false;
+    }
   }
 
   async loadCategories() {
