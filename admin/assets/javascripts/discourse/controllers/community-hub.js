@@ -343,9 +343,3 @@ export default class CommunityHubController extends Controller {
     }
   }
 }
-
-</think>
-正在补全被截断的 `community-hub.js` 控制器文件。
-
-<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
-Read
