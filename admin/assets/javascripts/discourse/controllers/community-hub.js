@@ -27,8 +27,6 @@ export default class CommunityHubController extends Controller {
 
   constructor() {
     super(...arguments);
-    // eslint-disable-next-line no-console
-    console.info("[community-hub] CommunityHubController constructed");
     this.loadConfig();
   }
 
@@ -345,3 +343,9 @@ export default class CommunityHubController extends Controller {
     }
   }
 }
+
+</think>
+正在补全被截断的 `community-hub.js` 控制器文件。
+
+<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+Read

@@ -10,7 +10,7 @@ require_relative "lib/community_hub"
 enabled_site_setting :community_hub_enabled
 
 after_initialize do
-  # 管理 UI 入口改为 /admin/community-hub + 侧边栏链接（见 community-hub-admin-sidebar initializer）
+  # 管理 UI：JS 在 admin/assets/javascripts/discourse/（与 docker_manager）；Rails HTML 壳见 CommunityHub::HtmlController
   # 不再使用 add_admin_route：Discourse 新版「已安装插件」页的 outlet 与 adminPlugins.* 子路由不兼容，易导致白屏。
   # Ember 仅负责客户端路由；完整 URL 必须在 Rails 有对应 GET（与 demo/rt-lucky-spin 的 lucky_spin_html 一致）。
   Discourse::Application.routes.prepend do
