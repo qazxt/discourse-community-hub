@@ -1,10 +1,10 @@
 /**
- * 挂在 admin 根下（/admin/community-hub），避免 adminPlugins 新版「插件详情」outlet 不渲染子模板导致白屏。
- * 入口：管理后台侧边栏链接（见 initializers/community-hub-admin-sidebar.js）
+ * 与 docker_manager 一致：admin 下使用 resetNamespace，否则子路由模板进不了新版管理后台主内容 outlet（URL 对、Router 对，但仍白屏）。
+ * URL 仍为 /admin/community-hub；Ember 路由名为 community-hub（非 admin.community-hub）。
  */
 export default {
   resource: "admin",
   map() {
-    this.route("community-hub", { path: "/community-hub" });
+    this.route("community-hub", { path: "/community-hub", resetNamespace: true });
   },
 };

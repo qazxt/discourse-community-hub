@@ -10,7 +10,7 @@ export default {
     withPluginApi((api) => {
       api.addAdminSidebarSectionLink("root", {
         name: "community_hub_config",
-        route: "admin.community-hub",
+        route: "community-hub",
         label: "community_hub.title",
         icon: "sliders",
       });
