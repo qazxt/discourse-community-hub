@@ -1,4 +1,4 @@
-{{! Discourse 2026+ resolver: admin/plugins/community-hub（对应 route adminPlugins.community-hub）}}
+{{! 与 controller 路径 admin-plugins/community-hub 一致，供 route adminPlugins.community-hub 解析 }}
 <div class="community-hub-admin">
   {{#if this.isLoading}}
     <p>Loading...</p>
@@ -62,7 +62,7 @@
 
     <div class="community-hub-section">
       <h3>Sidebar Section (title + view all)</h3>
-      <p>Overrides theme defaults when saved. Leave URL empty to hide “view all” in API.</p>
+      <p>Overrides theme defaults when saved. Leave URL empty to hide "view all" in API.</p>
       <label>Section title</label>
       <Input @value={{this.sidebarSectionTitle}} />
       <label>View all label</label>
