@@ -28,7 +28,12 @@ module CommunityHub
         "nav_items" => nav_items
           .select { |x| x.fetch("active", true) }
           .sort_by { |x| x.fetch("sort_order", 0).to_i }
-          .map { |x| { "label" => x["label"], "url" => x["url"], "is_external" => x.fetch("is_external", false) } },
+          .map do |x|
+            h = { "label" => x["label"], "url" => x["url"], "is_external" => x.fetch("is_external", false) }
+            bg = x["bg_color"].to_s.presence
+            h["bg_color"] = bg if bg
+            h
+          end,
         "hero_banners" => hero_banners
           .select { |x| x.fetch("active", true) }
           .sort_by { |x| x.fetch("sort_order", 0).to_i }

@@ -140,6 +140,7 @@ module CommunityHub
             "label" => h["label"].to_s,
             "url" => h["url"].to_s,
             "icon_name" => h["icon_name"].to_s,
+            "bg_color" => h["bg_color"].to_s,
             "is_external" => bool_param(h["is_external"]),
             "sort_order" => h["sort_order"].to_i,
             "active" => h.key?("active") ? bool_param(h["active"]) : true
@@ -195,9 +196,9 @@ module CommunityHub
 
       def default_nav_items
         [
-          { "id" => 1, "label" => "Help", "url" => "/help", "icon_name" => "", "is_external" => false, "sort_order" => 0, "active" => true },
-          { "id" => 2, "label" => "Community Perks", "url" => "/community-perks", "icon_name" => "", "is_external" => false, "sort_order" => 1, "active" => true },
-          { "id" => 3, "label" => "About", "url" => "/about", "icon_name" => "", "is_external" => false, "sort_order" => 2, "active" => true }
+          { "id" => 1, "label" => "Help", "url" => "/help", "icon_name" => "", "bg_color" => "", "is_external" => false, "sort_order" => 0, "active" => true },
+          { "id" => 2, "label" => "Community Perks", "url" => "/community-perks", "icon_name" => "", "bg_color" => "", "is_external" => false, "sort_order" => 1, "active" => true },
+          { "id" => 3, "label" => "About", "url" => "/about", "icon_name" => "", "bg_color" => "", "is_external" => false, "sort_order" => 2, "active" => true }
         ]
       end
     end

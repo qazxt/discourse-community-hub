@@ -65,6 +65,7 @@
 | `label` | string | ✅ | 显示文字 |
 | `url` | string | ✅ | 链接地址（相对路径或完整 URL） |
 | `is_external` | boolean | ✅ | `true` 时添加 `target="_blank" rel="noopener"` |
+| `bg_color` | string | 可选 | 导航栏卡片/按钮的背景色（建议 hex，如 `#f6ebe3`）；为空则由主题使用默认值 |
 
 **渲染位置**: `.robotime-header__nav` 容器内，移动端同步渲染到 `.robotime-mobile-nav`
 

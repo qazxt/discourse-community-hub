@@ -1,6 +1,10 @@
 为自定义主题的前端展示打造一个“配置中心”，让管理员无需写代码即可管理所有动态内容。
-1. 存储方案（无需 Migration）
-本插件使用 Discourse 的 `PluginStore` 持久化三类配置（导航 / Hero 轮播 / 侧栏小部件），因此**不需要**创建业务表，也无需执行插件相关的 `db:migrate`。
+
+## 功能概览
+
+### 1) 存储方案（无需 Migration）
+
+本插件使用 Discourse 的 `PluginStore` 持久化配置，因此**不需要**创建业务表，也无需执行插件相关的 `db:migrate`。
 
 存储键（namespace 为 `community-hub`）：
 - `nav_items`: 顶部导航栏（数组）
@@ -11,40 +15,48 @@
 - `sidebar_widgets`: 侧栏小部件幻灯片（数组）
 
 `GET /hub-config.json` 还会在未写入插件存储时，尝试从默认主题的 `robotime_*` 主题设置合并默认值（见 `PLUGIN-INTERFACE.md`）。
-2. 后台管理界面 (Admin UI)
-管理界面在 **`/admin/community-hub`**，并从管理后台**侧边栏**进入（与 `adminPlugins` 插件 Tab 解耦，避免新版插件页 outlet 白屏）。
-技术栈: Ember.js (Discourse 原生前端框架)。
-功能实现:
-列表页: 展示当前所有配置项，支持拖拽排序。
-编辑弹窗:
-图片上传: 集成 Discourse 原生的 UploadManager，管理员可直接拖拽上传图片，自动获取 URL。
-链接选择器: 提供一个下拉框，列出所有分类 (Categories)，方便直接选内部链接；也允许手动输入外部 URL。
-3. API 接口 (Controller)
-创建一个聚合接口，供主题调用。
-路由: GET /hub-config.json
-逻辑:
-ruby
 
-编辑
+### 2) 后台管理界面 (Admin UI)
 
+- **入口**：`/admin/community-hub`（管理后台侧边栏「社区配置中心」）
+- **技术栈**：Ember.js（Discourse Admin 前端）
+- **能力**：
+  - 列表页：展示各配置项，支持拖拽排序
+  - 编辑弹窗：增删改配置
+  - 图片上传：使用 Discourse 原生 `/uploads.json` 上传后写入 `image_url`
+  - 内部链接：下拉选择分类（Categories）自动生成 `/c/:slug/:id`，也可手填外链
 
+### 3) API 接口（给主题前台调用）
 
-def show
-  # 从 PluginStore 读取，筛 active=true，并按 sort_order 排序
-  # 返回字段严格对齐 PLUGIN-INTERFACE.md
-end
-缓存: 务必使用 `Rails.cache.fetch("community-hub:hub_config", expires_in: 1.hour)`，避免每次刷新页面都查库。
+- **聚合接口**：`GET /hub-config.json`（公开，游客也可访问）
+- **返回**：只返回 `active=true` 且按 `sort_order` 排序后的数据，字段严格对齐 `PLUGIN-INTERFACE.md`
+- **缓存**：`Rails.cache.fetch("community-hub:hub_config", expires_in: 1.hour)`（管理员保存/删除会自动失效）
 
 ## 安装与启用
-1. 将本插件放入 Discourse 的 `plugins/` 目录，例如：`plugins/community-hub`
-2. 重启 Discourse
-3. 在 Discourse Admin 后台开启站点设置：`community_hub_enabled`
+
+### 安装（本地开发 / Docker）
+
+1. 将本插件目录放入 Discourse 的 `plugins/` 目录，目录名建议为 `community-hub`：
+   - 例如：`/var/discourse/shared/standalone/plugins/community-hub`
+2. 重建并重启 Discourse（确保插件 Ruby 与前端资源被加载）：
+   - 例如：`./launcher rebuild app`
+3. 进入管理后台开启站点设置：
+   - `Admin -> Settings` 搜索并开启：`community_hub_enabled`
+
+### 安装（源码运行）
+
+1. 将本插件放到 Discourse 源码的 `plugins/community-hub`
+2. 启动或重启 Discourse（开发环境需要重新编译前端资源）
+3. 在管理后台开启 `community_hub_enabled`
 
 ## 后台管理入口
 - 管理页面：`/admin/community-hub`（侧边栏「社区配置中心」）
-- 功能要点：
-  - 三个区块分别支持增删改
-  - 支持拖拽排序（拖拽结束后会立刻保存到 `sort_order`，并清理接口缓存）
+- 配置说明：
+  - **Navigation Items**：顶部导航（支持 `bg_color` 可选背景色、外链开关、启用/禁用）
+  - **Hero Banners**：轮播卡片（支持 `bg_color`、图片上传、内部分类链接或外链）
+  - **Filter Quick Tags**：列表页快速标签（可选）
+  - **Sidebar Section / View All / Widgets**：侧栏活动区标题、查看全部链接、幻灯片
+  - **排序**：拖拽后会更新 `sort_order`，并自动清理 `hub-config.json` 缓存
 
 ## API 示例响应
 `GET /hub-config.json`（公开，游客也可访问；只返回 `active=true` 且按 `sort_order` 排序）：
@@ -52,7 +64,7 @@ end
 ```json
 {
   "nav_items": [
-    { "label": "Help", "url": "/help", "is_external": false }
+    { "label": "Help", "url": "/help", "is_external": false, "bg_color": "#f6ebe3" }
   ],
   "hero_banners": [
     {

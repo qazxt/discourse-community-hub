@@ -63,6 +63,8 @@
       border: 1px solid var(--primary-low);
       background: var(--secondary);
       cursor: pointer;
+      min-width: 72px;
+      text-align: center;
     }
   }
 }

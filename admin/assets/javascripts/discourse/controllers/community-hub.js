@@ -161,7 +161,7 @@ export default class CommunityHubController extends Controller {
 
   defaultDraft(type, sortOrder = 0) {
     if (type === "nav") {
-      return { id: null, label: "", url: "", icon_name: "", is_external: false, sort_order: sortOrder, active: true };
+      return { id: null, label: "", url: "", icon_name: "", bg_color: "", is_external: false, sort_order: sortOrder, active: true };
     }
     if (type === "filter") {
       return { id: null, label: "", url: "", is_external: false, sort_order: sortOrder, active: true };
@@ -211,12 +211,11 @@ export default class CommunityHubController extends Controller {
   @action
   addNew(type) {
     const prop = this.sectionProp(type);
-    const arr = (this[prop] || []).slice();
-    const newItem = this.defaultDraft(type, arr.length);
-    arr.push(newItem);
-    arr.forEach((item, idx) => (item.sort_order = idx));
-    this[prop] = arr;
-    this.openModal(type, newItem);
+    const arr = this[prop] || [];
+    const draft = this.defaultDraft(type, arr.length);
+    this.openModal(type, null);
+    this.modalDraft = draft;
+    this.modalTarget = null;
   }
 
   @action
@@ -334,16 +333,24 @@ export default class CommunityHubController extends Controller {
 
   @action
   async saveModalChanges() {
-    const target = this.modalTarget;
     const draft = this.modalDraft;
-    if (target && draft) {
-      Object.assign(target, draft);
-      const prop = this.sectionProp(this.modalType);
-      const list = this[prop] || [];
-      target.sort_order = list.indexOf(target);
+    const type = this.modalType;
+
+    if (draft && type) {
+      const prop = this.sectionProp(type);
+      const list = (this[prop] || []).slice();
+
+      if (this.modalTarget) {
+        Object.assign(this.modalTarget, draft);
+        this.modalTarget.sort_order = list.indexOf(this.modalTarget);
+      } else {
+        const newItem = { ...draft, id: draft.id || null };
+        list.push(newItem);
+        list.forEach((item, idx) => (item.sort_order = idx));
+        this[prop] = list;
+      }
     }
 
-    const type = this.modalType;
     this.closeModal();
     if (type) {
       await this.saveCategory(type);
