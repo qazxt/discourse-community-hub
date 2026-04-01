@@ -7,6 +7,8 @@
 
 require_relative "lib/community_hub"
 
+register_asset "stylesheets/common/community-hub.scss"
+
 enabled_site_setting :community_hub_enabled
 
 after_initialize do

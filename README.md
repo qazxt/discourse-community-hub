@@ -19,7 +19,6 @@
 编辑弹窗:
 图片上传: 集成 Discourse 原生的 UploadManager，管理员可直接拖拽上传图片，自动获取 URL。
 链接选择器: 提供一个下拉框，列出所有分类 (Categories)，方便直接选内部链接；也允许手动输入外部 URL。
-实时预览 (可选): 如果精力允许，可以在后台右侧做一个小的 Preview 区域。
 3. API 接口 (Controller)
 创建一个聚合接口，供主题调用。
 路由: GET /hub-config.json

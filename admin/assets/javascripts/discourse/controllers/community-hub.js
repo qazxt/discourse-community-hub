@@ -190,6 +190,7 @@ export default class CommunityHubController extends Controller {
     this.modalDraft = draft;
     this.modalTarget = item || null;
     this.uploadError = null;
+    document.body?.classList?.add("community-hub-modal-open");
   }
 
   @action
@@ -199,6 +200,12 @@ export default class CommunityHubController extends Controller {
     this.modalDraft = null;
     this.modalTarget = null;
     this.uploadError = null;
+    document.body?.classList?.remove("community-hub-modal-open");
+  }
+
+  @action
+  stopPropagation(e) {
+    e?.stopPropagation?.();
   }
 
   @action

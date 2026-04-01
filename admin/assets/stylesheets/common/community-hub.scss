@@ -1,0 +1,128 @@
+.community-hub-admin {
+  max-width: 1100px;
+  padding: 1rem;
+
+  .community-hub-section {
+    background: var(--secondary);
+    border: 1px solid var(--primary-low);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+
+    h3 {
+      margin: 0 0 12px 0;
+      font-size: var(--font-up-1);
+    }
+  }
+
+  .community-hub-actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+
+    button {
+      padding: 0.45rem 0.75rem;
+      border-radius: 8px;
+      border: 1px solid var(--primary-low);
+      background: var(--tertiary-low);
+      color: var(--primary);
+      cursor: pointer;
+    }
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 8px;
+  }
+
+  .community-hub-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px 12px;
+    align-items: center;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--primary-low);
+    background: var(--primary-very-low);
+
+    > span {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    button {
+      margin-left: 8px;
+      padding: 0.3rem 0.6rem;
+      border-radius: 8px;
+      border: 1px solid var(--primary-low);
+      background: var(--secondary);
+      cursor: pointer;
+    }
+  }
+}
+
+.community-hub-modal-open {
+  overflow: hidden;
+}
+
+.community-hub-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 1000;
+}
+
+.community-hub-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(720px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+  z-index: 1001;
+
+  background: var(--secondary);
+  border: 1px solid var(--primary-low);
+  border-radius: 12px;
+  padding: 16px;
+
+  h3 {
+    margin: 0 0 12px 0;
+    font-size: var(--font-up-1);
+  }
+
+  label {
+    display: block;
+    margin-top: 10px;
+    margin-bottom: 6px;
+    color: var(--primary-medium);
+    font-weight: 600;
+  }
+
+  input[type="file"] {
+    display: block;
+    margin: 8px 0;
+  }
+}
+
+.community-hub-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+
+  button {
+    padding: 0.45rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid var(--primary-low);
+    background: var(--tertiary-low);
+    cursor: pointer;
+  }
+}
+

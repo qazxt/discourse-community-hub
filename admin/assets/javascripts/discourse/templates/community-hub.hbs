@@ -97,8 +97,8 @@
   {{/if}}
 
   {{#if this.modalOpen}}
-    <div class="modal-backdrop"></div>
-    <div class="community-hub-modal">
+    <div class="community-hub-modal-backdrop" {{on "click" this.closeModal}}></div>
+    <div class="community-hub-modal" role="dialog" aria-modal="true" {{on "click" this.stopPropagation}}>
       <h3>
         {{#if this.isNavModal}}Edit Navigation Item{{/if}}
         {{#if this.isHeroModal}}Edit Hero Banner{{/if}}
