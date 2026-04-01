@@ -17,27 +17,15 @@ module CommunityHub
       end
 
       def save_nav_items
-        items = normalize_items(params.require(:items))
-        write_store("nav_items", normalize_nav_items(items))
-        render json: { ok: true }
-      rescue ActionController::ParameterMissing => e
-        render json: { ok: false, error: e.message }, status: :unprocessable_entity
+        save_items_bucket!("nav_items", :normalize_nav_items)
       end
 
       def save_hero_banners
-        items = normalize_items(params.require(:items))
-        write_store("hero_banners", normalize_hero_banners(items))
-        render json: { ok: true }
-      rescue ActionController::ParameterMissing => e
-        render json: { ok: false, error: e.message }, status: :unprocessable_entity
+        save_items_bucket!("hero_banners", :normalize_hero_banners)
       end
 
       def save_filter_quick_tags
-        items = normalize_items(params.require(:items))
-        write_store("filter_quick_tags", normalize_filter_quick_tags(items))
-        render json: { ok: true }
-      rescue ActionController::ParameterMissing => e
-        render json: { ok: false, error: e.message }, status: :unprocessable_entity
+        save_items_bucket!("filter_quick_tags", :normalize_filter_quick_tags)
       end
 
       def save_sidebar_extras
@@ -63,11 +51,7 @@ module CommunityHub
       end
 
       def save_sidebar_widgets
-        items = normalize_items(params.require(:items))
-        write_store("sidebar_widgets", normalize_sidebar_widgets(items))
-        render json: { ok: true }
-      rescue ActionController::ParameterMissing => e
-        render json: { ok: false, error: e.message }, status: :unprocessable_entity
+        save_items_bucket!("sidebar_widgets", :normalize_sidebar_widgets)
       end
 
       def destroy_nav_item
@@ -100,13 +84,67 @@ module CommunityHub
 
       private
 
+      def save_items_bucket!(store_key, normalizer_method)
+        items = normalize_items(parse_items_param)
+        write_store(store_key, send(normalizer_method, items))
+        render json: { ok: true }
+      rescue ActionController::ParameterMissing => e
+        render json: { ok: false, error: e.message }, status: :unprocessable_entity
+      rescue ArgumentError, JSON::ParserError => e
+        render json: { ok: false, error: e.message }, status: :unprocessable_entity
+      end
+
+      # Ember/jQuery 对嵌套数组的序列化不稳定，可能导致 items 非 Array 从而在 normalize_items 里 500。
+      # 兼容：JSON 请求体、application/x-www-form-urlencoded 的 "0"/"1" 哈希、以及字符串 JSON。
+      def parse_items_param
+        raw = params[:items]
+        raise ActionController::ParameterMissing.new(:items) if raw.nil?
+
+        case raw
+        when Array
+          raw
+        when String
+          parsed = JSON.parse(raw)
+          raise ArgumentError, "items must be a JSON array" unless parsed.is_a?(Array)
+          parsed
+        when ActionController::Parameters
+          inner = raw.to_unsafe_h
+          coalesce_items_collection(inner)
+        when Hash
+          coalesce_items_collection(raw)
+        else
+          raise ArgumentError, "unsupported items param type: #{raw.class.name}"
+        end
+      end
+
+      def coalesce_items_collection(obj)
+        return obj if obj.is_a?(Array)
+
+        h = obj.stringify_keys
+        if h.empty?
+          []
+        elsif h.keys.all? { |k| k.match?(/\A\d+\z/) }
+          h.sort_by { |k, _| k.to_i }.map { |_, v| v }
+        else
+          raise ArgumentError, "items must be an array, got a hash with non-numeric keys"
+        end
+      end
+
       def bool_param(val)
         ActiveModel::Type::Boolean.new.cast(val)
       end
 
       def normalize_items(items)
         items.map do |x|
-          h = x.respond_to?(:to_unsafe_h) ? x.to_unsafe_h : x.to_h
+          h =
+            case x
+            when Hash
+              x
+            when ActionController::Parameters
+              x.to_unsafe_h
+            else
+              x.respond_to?(:to_unsafe_h) ? x.to_unsafe_h : x.to_h
+            end
           h.stringify_keys
         end
       end

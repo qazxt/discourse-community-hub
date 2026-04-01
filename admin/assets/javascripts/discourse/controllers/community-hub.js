@@ -393,7 +393,13 @@ export default class CommunityHubController extends Controller {
             : "/admin/plugins/community-hub/sidebar_widgets.json";
 
     const items = this.itemsPayloadForSave(type);
-    await ajax(api, { type: "PUT", data: { items } });
+    // 必须用 JSON 请求体：嵌套数组经表单序列化后 Rails 常得不到 Array，normalize_items 会对 String 调 map → 500
+    await ajax(api, {
+      type: "PUT",
+      contentType: "application/json; charset=UTF-8",
+      data: JSON.stringify({ items }),
+      processData: false,
+    });
     await this.loadConfig();
   }
 
