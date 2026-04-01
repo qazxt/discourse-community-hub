@@ -2,6 +2,27 @@
   max-width: 1100px;
   padding: 1rem;
 
+  .community-hub-muted {
+    margin: 0 0 10px 0;
+    font-size: var(--font-0);
+    color: var(--primary-medium);
+    line-height: 1.45;
+  }
+
+  .community-hub-inline-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    font-weight: 600;
+    color: var(--primary-medium);
+
+    .ember-text-field,
+    input[type="checkbox"] {
+      margin: 0;
+    }
+  }
+
   .community-hub-section {
     background: var(--secondary);
     border: 1px solid var(--primary-low);
@@ -41,7 +62,7 @@
 
   .community-hub-item {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
     gap: 8px 12px;
     align-items: center;
     padding: 10px 12px;
@@ -49,16 +70,22 @@
     border: 1px solid var(--primary-low);
     background: var(--primary-very-low);
 
-    > span {
+    > span:not(.community-hub-item-actions) {
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    button {
-      margin-left: 8px;
-      padding: 0.3rem 0.6rem;
+    .community-hub-item-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .community-hub-item-actions button {
+      padding: 0.35rem 0.65rem;
       border-radius: 6px;
       border: 1px solid var(--primary-low);
       background: var(--secondary);
@@ -113,6 +140,21 @@
     display: block;
     margin: 8px 0;
   }
+
+  .community-hub-inline-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    font-weight: 600;
+    color: var(--primary-medium);
+  }
+
+  .community-hub-error {
+    margin: 8px 0 0 0;
+    color: var(--danger);
+    font-size: var(--font-0);
+  }
 }
 
 .community-hub-modal-footer {
@@ -127,6 +169,10 @@
     border: 1px solid var(--primary-low);
     background: var(--tertiary-low);
     cursor: pointer;
+  }
+
+  button.is-secondary {
+    background: var(--secondary);
   }
 }
 

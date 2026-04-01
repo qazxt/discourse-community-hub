@@ -49,7 +49,8 @@
     {
       "label": "Help",
       "url": "/help",
-      "is_external": false
+      "is_external": false,
+      "bg_color": "#222831"
     },
     {
       "label": "Buy",

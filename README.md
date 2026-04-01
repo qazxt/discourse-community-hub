@@ -51,12 +51,12 @@
 
 ## 后台管理入口
 - 管理页面：`/admin/community-hub`（侧边栏「社区配置中心」）
-- 配置说明：
-  - **Navigation Items**：顶部导航（支持 `bg_color` 可选背景色、外链开关、启用/禁用）
-  - **Hero Banners**：轮播卡片（支持 `bg_color`、图片上传、内部分类链接或外链）
-  - **Filter Quick Tags**：列表页快速标签（可选）
-  - **Sidebar Section / View All / Widgets**：侧栏活动区标题、查看全部链接、幻灯片
-  - **排序**：拖拽后会更新 `sort_order`，并自动清理 `hub-config.json` 缓存
+- 配置说明（字段与 `PLUGIN-INTERFACE.md` 一致）：
+  - **nav_items**：`label` / `url` / `is_external` / `bg_color`（可选）
+  - **hero_banners**：`title` / `image_url` / `link_url` / `bg_color`（可选）
+  - **filter_quick_tags**：`label` / `url` / `is_external`（可选）
+  - **sidebar_section_title / sidebar_view_all / sidebar_widgets**：侧栏标题、查看全部、幻灯片（`title` / `image_url` / `link_url`）
+  - **保存**：列表项在弹窗内点「保存」会写入；**拖拽排序**会立即保存当前列表并刷新接口缓存
 
 ## API 示例响应
 `GET /hub-config.json`（公开，游客也可访问；只返回 `active=true` 且按 `sort_order` 排序）：
@@ -94,11 +94,9 @@
 ```
 
 ## 手工验证（建议）
-1. Admin 后台分别新增一条 `nav_items` / `hero_banners` / `sidebar_widgets`，并设置 `active=true`
-2. 在 Admin 页面拖拽排序后，确认页面刷新时顺序保持不变
-3. 在浏览器访问 `GET /hub-config.json`，确认：
-   - 不包含 `active=false` 的数据
-   - 三类数据均按 `sort_order` 顺序返回
-4. 修改某条记录（例如调整 `sort_order` 或 `link_url`），再次访问 `GET /hub-config.json`，确认变更会生效（缓存已被清理）
+1. 在后台各区块点 Add，弹窗内填必填项后保存，确认列表与 `GET /hub-config.json` 一致
+2. 拖拽排序后刷新后台页，顺序应保持；再访问 `GET /hub-config.json` 验证顺序
+3. 删除一条记录后，确认 `hub-config.json` 中不再出现该项
+4. 若修改侧栏标题/查看全部，保存后确认 `hub-config.json` 相应字段更新
 
 

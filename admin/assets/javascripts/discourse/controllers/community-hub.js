@@ -18,7 +18,7 @@ export default class CommunityHubController extends Controller {
   @tracked categories = [];
 
   @tracked modalOpen = false;
-  @tracked modalType = null; // "nav" | "hero" | "filter" | "sidebar"
+  @tracked modalType = null;
   @tracked modalDraft = null;
   @tracked modalTarget = null;
   @tracked uploadError = null;
@@ -56,6 +56,51 @@ export default class CommunityHubController extends Controller {
     if (type === "hero") return "heroBanners";
     if (type === "filter") return "filterQuickTags";
     return "sidebarWidgets";
+  }
+
+  itemsPayloadForSave(type) {
+    const prop = this.sectionProp(type);
+    const list = this[prop] || [];
+    if (type === "nav") {
+      return list.map((x) => ({
+        id: x.id || null,
+        label: x.label,
+        url: x.url,
+        bg_color: x.bg_color,
+        is_external: x.is_external,
+        sort_order: x.sort_order,
+        active: true,
+      }));
+    }
+    if (type === "filter") {
+      return list.map((x) => ({
+        id: x.id || null,
+        label: x.label,
+        url: x.url,
+        is_external: x.is_external,
+        sort_order: x.sort_order,
+        active: true,
+      }));
+    }
+    if (type === "hero") {
+      return list.map((x) => ({
+        id: x.id || null,
+        title: x.title,
+        image_url: x.image_url,
+        link_url: x.link_url,
+        bg_color: x.bg_color,
+        sort_order: x.sort_order,
+        active: true,
+      }));
+    }
+    return list.map((x) => ({
+      id: x.id || null,
+      title: x.title,
+      image_url: x.image_url,
+      link_url: x.link_url,
+      sort_order: x.sort_order,
+      active: true,
+    }));
   }
 
   async loadConfig() {
@@ -161,7 +206,15 @@ export default class CommunityHubController extends Controller {
 
   defaultDraft(type, sortOrder = 0) {
     if (type === "nav") {
-      return { id: null, label: "", url: "", icon_name: "", bg_color: "", is_external: false, sort_order: sortOrder, active: true };
+      return {
+        id: null,
+        label: "",
+        url: "",
+        bg_color: "",
+        is_external: false,
+        sort_order: sortOrder,
+        active: true,
+      };
     }
     if (type === "filter") {
       return { id: null, label: "", url: "", is_external: false, sort_order: sortOrder, active: true };
@@ -170,24 +223,66 @@ export default class CommunityHubController extends Controller {
       return {
         id: null,
         title: "",
-        subtitle: "",
         image_url: "",
         link_url: "",
         bg_color: "#f6ebe3",
-        style_type: "",
         sort_order: sortOrder,
         active: true,
       };
     }
-    return { id: null, title: "", image_url: "", link_url: "", widget_type: "", sort_order: sortOrder, active: true };
+    return { id: null, title: "", image_url: "", link_url: "", sort_order: sortOrder, active: true };
+  }
+
+  normalizeDraftForOpen(type, item) {
+    if (!item) return this.defaultDraft(type);
+    const d = { ...item };
+    if (type === "nav") {
+      return {
+        id: d.id ?? null,
+        label: d.label ?? "",
+        url: d.url ?? "",
+        bg_color: d.bg_color ?? "",
+        is_external: !!d.is_external,
+        sort_order: d.sort_order ?? 0,
+        active: true,
+      };
+    }
+    if (type === "filter") {
+      return {
+        id: d.id ?? null,
+        label: d.label ?? "",
+        url: d.url ?? "",
+        is_external: !!d.is_external,
+        sort_order: d.sort_order ?? 0,
+        active: true,
+      };
+    }
+    if (type === "hero") {
+      return {
+        id: d.id ?? null,
+        title: d.title ?? "",
+        image_url: d.image_url ?? "",
+        link_url: d.link_url ?? "",
+        bg_color: d.bg_color ?? "#f6ebe3",
+        sort_order: d.sort_order ?? 0,
+        active: true,
+      };
+    }
+    return {
+      id: d.id ?? null,
+      title: d.title ?? "",
+      image_url: d.image_url ?? "",
+      link_url: d.link_url ?? "",
+      sort_order: d.sort_order ?? 0,
+      active: true,
+    };
   }
 
   @action
   openModal(type, item) {
-    const draft = item ? { ...item } : this.defaultDraft(type);
     this.modalOpen = true;
     this.modalType = type;
-    this.modalDraft = draft;
+    this.modalDraft = this.normalizeDraftForOpen(type, item);
     this.modalTarget = item || null;
     this.uploadError = null;
     document.body?.classList?.add("community-hub-modal-open");
@@ -235,12 +330,13 @@ export default class CommunityHubController extends Controller {
   }
 
   @action
-  async uploadModalImage() {
-    const fileInput = document.getElementById("community-hub-upload-file");
+  async uploadModalImage(kind) {
+    const inputId = kind === "hero" ? "community-hub-upload-hero" : "community-hub-upload-sidebar";
+    const fileInput = document.getElementById(inputId);
     if (!fileInput?.files?.length) return;
     const file = fileInput.files[0];
 
-    const uploadType = this.modalType === "hero" ? "hub_hero_banner" : "hub_sidebar_widget";
+    const uploadType = kind === "hero" ? "hub_hero_banner" : "hub_sidebar_widget";
     const formData = new FormData();
     formData.append("file", file);
     formData.append("type", uploadType);
@@ -269,6 +365,7 @@ export default class CommunityHubController extends Controller {
     }
 
     this.modalDraft = { ...this.modalDraft, image_url: url };
+    this.uploadError = null;
   }
 
   @action
@@ -295,27 +392,8 @@ export default class CommunityHubController extends Controller {
             ? "/admin/plugins/community-hub/filter_quick_tags.json"
             : "/admin/plugins/community-hub/sidebar_widgets.json";
 
-    const prop = this.sectionProp(type);
-    const items = (this[prop] || []).map((x) => ({
-      id: x.id || null,
-      label: x.label,
-      url: x.url,
-      icon_name: x.icon_name,
-      is_external: x.is_external,
-      sort_order: x.sort_order,
-      active: x.active,
-
-      title: x.title,
-      subtitle: x.subtitle,
-      image_url: x.image_url,
-      link_url: x.link_url,
-      bg_color: x.bg_color,
-      style_type: x.style_type,
-      widget_type: x.widget_type,
-    }));
-
+    const items = this.itemsPayloadForSave(type);
     await ajax(api, { type: "PUT", data: { items } });
-
     await this.loadConfig();
   }
 

@@ -139,11 +139,10 @@ module CommunityHub
             "id" => (h["id"].presence || Time.now.to_f * 1000 + idx).to_i,
             "label" => h["label"].to_s,
             "url" => h["url"].to_s,
-            "icon_name" => h["icon_name"].to_s,
             "bg_color" => h["bg_color"].to_s,
             "is_external" => bool_param(h["is_external"]),
             "sort_order" => h["sort_order"].to_i,
-            "active" => h.key?("active") ? bool_param(h["active"]) : true
+            "active" => true
           }
         end.sort_by { |x| x["sort_order"] }
       end
@@ -157,7 +156,7 @@ module CommunityHub
             "url" => h["url"].to_s,
             "is_external" => h.key?("is_external") ? bool_param(h["is_external"]) : false,
             "sort_order" => h["sort_order"].to_i,
-            "active" => h.key?("active") ? bool_param(h["active"]) : true
+            "active" => true
           }
         end.sort_by { |x| x["sort_order"] }
       end
@@ -168,13 +167,11 @@ module CommunityHub
           {
             "id" => (h["id"].presence || Time.now.to_f * 1000 + idx).to_i,
             "title" => h["title"].to_s,
-            "subtitle" => h["subtitle"].to_s,
             "image_url" => h["image_url"].to_s,
             "link_url" => h["link_url"].to_s,
             "bg_color" => h["bg_color"].presence || "#f6ebe3",
-            "style_type" => h["style_type"].to_s,
             "sort_order" => h["sort_order"].to_i,
-            "active" => h.key?("active") ? bool_param(h["active"]) : true
+            "active" => true
           }
         end.sort_by { |x| x["sort_order"] }
       end
@@ -187,18 +184,17 @@ module CommunityHub
             "title" => h["title"].to_s,
             "image_url" => h["image_url"].to_s,
             "link_url" => h["link_url"].to_s,
-            "widget_type" => h["widget_type"].to_s,
             "sort_order" => h["sort_order"].to_i,
-            "active" => h.key?("active") ? bool_param(h["active"]) : true
+            "active" => true
           }
         end.sort_by { |x| x["sort_order"] }
       end
 
       def default_nav_items
         [
-          { "id" => 1, "label" => "Help", "url" => "/help", "icon_name" => "", "bg_color" => "", "is_external" => false, "sort_order" => 0, "active" => true },
-          { "id" => 2, "label" => "Community Perks", "url" => "/community-perks", "icon_name" => "", "bg_color" => "", "is_external" => false, "sort_order" => 1, "active" => true },
-          { "id" => 3, "label" => "About", "url" => "/about", "icon_name" => "", "bg_color" => "", "is_external" => false, "sort_order" => 2, "active" => true }
+          { "id" => 1, "label" => "Help", "url" => "/help", "bg_color" => "", "is_external" => false, "sort_order" => 0, "active" => true },
+          { "id" => 2, "label" => "Community Perks", "url" => "/community-perks", "bg_color" => "", "is_external" => false, "sort_order" => 1, "active" => true },
+          { "id" => 3, "label" => "About", "url" => "/about", "bg_color" => "", "is_external" => false, "sort_order" => 2, "active" => true }
         ]
       end
     end
