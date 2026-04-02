@@ -156,22 +156,35 @@
 
           <label>图片地址 (image_url)</label>
           <Input @value={{this.modalDraft.image_url}} />
-          <input id="community-hub-upload-hero" type="file" accept="image/*" />
-          <button type="button" {{on "click" (fn this.uploadModalImage "hero")}}>上传图片</button>
+          <input id="community-hub-upload-hero" type="file" accept="image/*" {{on "change" (fn this.onFileSelected "hero")}} />
           {{#if this.uploadError}}
             <p class="community-hub-error">{{this.uploadError}}</p>
           {{/if}}
 
-          <label>选择分类填入 link_url（可选）</label>
+          <label>跳转方式</label>
+          <label class="community-hub-inline-label">
+            <Input @type="radio" @name="hero_link_mode" @checked={{this.isHeroCustomLink}} {{on "change" (fn this.setLinkMode "custom")}} />
+            手动填写 URL
+          </label>
+          <label class="community-hub-inline-label">
+            <Input @type="radio" @name="hero_link_mode" @checked={{this.isHeroCategoryLink}} {{on "change" (fn this.setLinkMode "category")}} />
+            选择站内分类自动生成 URL
+          </label>
+
+          {{#if this.isHeroCategoryLink}}
           <select {{on "change" (fn this.setCategoryLink "hero")}}>
-            <option value="">— 不选用分类，手填下方 link_url —</option>
+            <option value="">— 请选择分类 —</option>
             {{#each this.categories as |cat|}}
               <option value={{cat.id}}>{{cat.name}}</option>
             {{/each}}
           </select>
+          {{/if}}
 
           <label>跳转 (link_url)</label>
-          <Input @value={{this.modalDraft.link_url}} />
+          <Input @value={{this.modalDraft.link_url}} @disabled={{this.isHeroCategoryLink}} />
+          {{#if this.isHeroCategoryLink}}
+            <p class="community-hub-muted">选择分类后会自动写入 `link_url`（站内格式 `/c/:slug/:id`）。如需自定义链接，切换到「手动填写 URL」。</p>
+          {{/if}}
 
           <label>兜底背景色 (bg_color，可选)</label>
           <Input @value={{this.modalDraft.bg_color}} placeholder="#f6ebe3" />
@@ -183,19 +196,10 @@
 
           <label>图片地址 (image_url)</label>
           <Input @value={{this.modalDraft.image_url}} />
-          <input id="community-hub-upload-sidebar" type="file" accept="image/*" />
-          <button type="button" {{on "click" (fn this.uploadModalImage "sidebar")}}>上传图片</button>
+          <input id="community-hub-upload-sidebar" type="file" accept="image/*" {{on "change" (fn this.onFileSelected "sidebar")}} />
           {{#if this.uploadError}}
             <p class="community-hub-error">{{this.uploadError}}</p>
           {{/if}}
-
-          <label>选择分类填入 link_url（可选）</label>
-          <select {{on "change" (fn this.setCategoryLink "sidebar")}}>
-            <option value="">— 不选用分类，手填下方 link_url —</option>
-            {{#each this.categories as |cat|}}
-              <option value={{cat.id}}>{{cat.name}}</option>
-            {{/each}}
-          </select>
 
           <label>跳转 (link_url)</label>
           <Input @value={{this.modalDraft.link_url}} />

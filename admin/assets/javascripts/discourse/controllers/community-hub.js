@@ -46,6 +46,14 @@ export default class CommunityHubController extends Controller {
     return this.modalType === "sidebar";
   }
 
+  get isHeroCustomLink() {
+    return this.modalDraft?._linkMode !== "category";
+  }
+
+  get isHeroCategoryLink() {
+    return this.modalDraft?._linkMode === "category";
+  }
+
   csrfToken() {
     const el = document.querySelector('meta[name="csrf-token"]');
     return el ? el.content : null;
@@ -264,6 +272,7 @@ export default class CommunityHubController extends Controller {
         image_url: d.image_url ?? "",
         link_url: d.link_url ?? "",
         bg_color: d.bg_color ?? "#f6ebe3",
+        _linkMode: "custom",
         sort_order: d.sort_order ?? 0,
         active: true,
       };
@@ -330,11 +339,9 @@ export default class CommunityHubController extends Controller {
   }
 
   @action
-  async uploadModalImage(kind) {
-    const inputId = kind === "hero" ? "community-hub-upload-hero" : "community-hub-upload-sidebar";
-    const fileInput = document.getElementById(inputId);
-    if (!fileInput?.files?.length) return;
-    const file = fileInput.files[0];
+  async onFileSelected(kind, event) {
+    const file = event?.target?.files?.[0];
+    if (!file) return;
 
     const uploadType = kind === "hero" ? "hub_hero_banner" : "hub_sidebar_widget";
     const formData = new FormData();
@@ -369,6 +376,12 @@ export default class CommunityHubController extends Controller {
   }
 
   @action
+  setLinkMode(mode) {
+    if (!this.modalDraft) return;
+    this.modalDraft = { ...this.modalDraft, _linkMode: mode };
+  }
+
+  @action
   setCategoryLink(_type, categoryId) {
     if (!this.modalDraft) return;
     const id = parseInt(categoryId, 10);
@@ -378,7 +391,7 @@ export default class CommunityHubController extends Controller {
     if (!cat?.slug) return;
 
     const linkUrl = `/c/${cat.slug}/${cat.id}`;
-    this.modalDraft = { ...this.modalDraft, link_url: linkUrl };
+    this.modalDraft = { ...this.modalDraft, link_url: linkUrl, _linkMode: "category" };
   }
 
   @action
