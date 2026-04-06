@@ -1,32 +1,20 @@
-{{! resetNamespace 路由 community-hub，URL /admin/community-hub — 字段对齐 PLUGIN-INTERFACE.md }}
+{{! /admin/community-hub — 仅维护 hub-config.json 中的 hero_banners、sidebar_widgets（PLUGIN-INTERFACE.md） }}
 <div class="community-hub-admin">
   {{#if this.isLoading}}
     <p class="community-hub-muted">加载中…</p>
   {{else}}
-    <div class="community-hub-section">
-      <h3>顶部导航 (nav_items)</h3>
-      <p class="community-hub-muted">拖拽排序；点 Add 在弹窗内保存后写入。字段：label / url / is_external / bg_color（可选）</p>
-      <div class="community-hub-actions">
-        <button type="button" {{on "click" (fn this.addNew "nav")}}>Add</button>
-      </div>
-
-      <ul>
-        {{#each this.navItems as |item idx|}}
-          <li class="community-hub-item" draggable="true" data-section="nav_items" data-index={{idx}}>
-            <span>{{idx}}. {{item.label}}</span>
-            <span>({{item.url}})</span>
-            <span class="community-hub-item-actions">
-              <button type="button" {{on "click" (fn this.openModal "nav" item)}}>Edit</button>
-              <button type="button" {{on "click" (fn this.deleteItem "nav" item.id)}}>Delete</button>
-            </span>
-          </li>
-        {{/each}}
-      </ul>
+    <div class="community-hub-section community-hub-intro">
+      <h3>说明</h3>
+      <p class="community-hub-muted">
+        本页<strong>仅</strong>配置 <code>GET /hub-config.json</code> 中的 <code>hero_banners</code>（顶栏轮播）与 <code>sidebar_widgets</code>（侧栏幻灯片）。
+        顶栏导航、预显标签、Logo、侧栏区块标题与「查看全部」等请到
+        <strong>Admin → Customize → Themes → Theme settings</strong>（见文档 §三）。
+      </p>
     </div>
 
     <div class="community-hub-section">
-      <h3>轮播卡片 (hero_banners)</h3>
-      <p class="community-hub-muted">字段：title / image_url / link_url / bg_color（可选，默认 #f6ebe3）</p>
+      <h3>顶栏轮播 (hero_banners)</h3>
+      <p class="community-hub-muted">字段：title / image_url / link_url / bg_color（可选）</p>
       <div class="community-hub-actions">
         <button type="button" {{on "click" (fn this.addNew "hero")}}>Add</button>
       </div>
@@ -43,49 +31,6 @@
           </li>
         {{/each}}
       </ul>
-    </div>
-
-    <div class="community-hub-section">
-      <h3>列表预显标签 (filter_quick_tags)</h3>
-      <p class="community-hub-muted">字段：label / url / is_external（可选）</p>
-      <div class="community-hub-actions">
-        <button type="button" {{on "click" (fn this.addNew "filter")}}>Add</button>
-      </div>
-
-      <ul>
-        {{#each this.filterQuickTags as |item idx|}}
-          <li class="community-hub-item" draggable="true" data-section="filter_quick_tags" data-index={{idx}}>
-            <span>{{idx}}. {{item.label}}</span>
-            <span>({{item.url}})</span>
-            <span class="community-hub-item-actions">
-              <button type="button" {{on "click" (fn this.openModal "filter" item)}}>Edit</button>
-              <button type="button" {{on "click" (fn this.deleteItem "filter" item.id)}}>Delete</button>
-            </span>
-          </li>
-        {{/each}}
-      </ul>
-    </div>
-
-    <div class="community-hub-section">
-      <h3>侧栏标题与「查看全部」(sidebar_section_title / sidebar_view_all)</h3>
-      <p class="community-hub-muted">留空 URL 则不向前台输出「查看全部」链接。</p>
-      <label>区块标题</label>
-      <Input @value={{this.sidebarSectionTitle}} />
-
-      <label>查看全部文案</label>
-      <Input @value={{this.sidebarViewAll.label}} />
-
-      <label>查看全部 URL</label>
-      <Input @value={{this.sidebarViewAll.url}} />
-
-      <label class="community-hub-inline-label">
-        <Input @type="checkbox" @checked={{this.sidebarViewAll.is_external}} />
-        外链（新窗口）
-      </label>
-
-      <div class="community-hub-actions">
-        <button type="button" {{on "click" this.saveSidebarExtras}}>保存侧栏头区</button>
-      </div>
     </div>
 
     <div class="community-hub-section">
@@ -113,43 +58,9 @@
   {{#if this.modalOpen}}
     <div class="community-hub-modal-backdrop" {{on "click" this.closeModal}}></div>
     <div class="community-hub-modal" role="dialog" aria-modal="true" {{on "click" this.stopPropagation}}>
-      <h3>
-        {{#if this.isNavModal}}导航项{{/if}}
-        {{#if this.isHeroModal}}轮播卡片{{/if}}
-        {{#if this.isFilterModal}}预显标签{{/if}}
-        {{#if this.isSidebarModal}}侧栏幻灯片{{/if}}
-      </h3>
+      <h3>{{#if this.isHeroModal}}轮播卡片{{else}}侧栏幻灯片{{/if}}</h3>
 
       <div class="community-hub-modal-body">
-        {{#if this.isNavModal}}
-          <label>显示文字 (label)</label>
-          <Input @value={{this.modalDraft.label}} />
-
-          <label>链接 (url)</label>
-          <Input @value={{this.modalDraft.url}} />
-
-          <label>背景色 (bg_color，可选，如 #f6ebe3)</label>
-          <Input @value={{this.modalDraft.bg_color}} placeholder="#f6ebe3" />
-
-          <label class="community-hub-inline-label">
-            <Input @type="checkbox" @checked={{this.modalDraft.is_external}} />
-            外链
-          </label>
-        {{/if}}
-
-        {{#if this.isFilterModal}}
-          <label>显示文字 (label)</label>
-          <Input @value={{this.modalDraft.label}} />
-
-          <label>链接 (url)</label>
-          <Input @value={{this.modalDraft.url}} />
-
-          <label class="community-hub-inline-label">
-            <Input @type="checkbox" @checked={{this.modalDraft.is_external}} />
-            外链
-          </label>
-        {{/if}}
-
         {{#if this.isHeroModal}}
           <label>标题 (title)</label>
           <Input @value={{this.modalDraft.title}} />
@@ -172,18 +83,18 @@
           </label>
 
           {{#if this.isHeroCategoryLink}}
-          <select {{on "change" (fn this.setCategoryLink "hero")}}>
-            <option value="">— 请选择分类 —</option>
-            {{#each this.categories as |cat|}}
-              <option value={{cat.id}}>{{cat.name}}</option>
-            {{/each}}
-          </select>
+            <select {{on "change" (fn this.setCategoryLink "hero")}}>
+              <option value="">— 请选择分类 —</option>
+              {{#each this.categories as |cat|}}
+                <option value={{cat.id}}>{{cat.name}}</option>
+              {{/each}}
+            </select>
           {{/if}}
 
           <label>跳转 (link_url)</label>
           <Input @value={{this.modalDraft.link_url}} @disabled={{this.isHeroCategoryLink}} />
           {{#if this.isHeroCategoryLink}}
-            <p class="community-hub-muted">选择分类后会自动写入 `link_url`（站内格式 `/c/:slug/:id`）。如需自定义链接，切换到「手动填写 URL」。</p>
+            <p class="community-hub-muted">选择分类后会自动写入 link_url（格式 `/c/:slug/:id`）。</p>
           {{/if}}
 
           <label>兜底背景色 (bg_color，可选)</label>
@@ -201,8 +112,30 @@
             <p class="community-hub-error">{{this.uploadError}}</p>
           {{/if}}
 
+          <label>跳转方式</label>
+          <label class="community-hub-inline-label">
+            <Input @type="radio" @name="sidebar_link_mode" @checked={{this.isSidebarCustomLink}} {{on "change" (fn this.setLinkMode "custom")}} />
+            手动填写 URL
+          </label>
+          <label class="community-hub-inline-label">
+            <Input @type="radio" @name="sidebar_link_mode" @checked={{this.isSidebarCategoryLink}} {{on "change" (fn this.setLinkMode "category")}} />
+            选择站内分类自动生成 URL
+          </label>
+
+          {{#if this.isSidebarCategoryLink}}
+            <select {{on "change" (fn this.setCategoryLink "sidebar")}}>
+              <option value="">— 请选择分类 —</option>
+              {{#each this.categories as |cat|}}
+                <option value={{cat.id}}>{{cat.name}}</option>
+              {{/each}}
+            </select>
+          {{/if}}
+
           <label>跳转 (link_url)</label>
-          <Input @value={{this.modalDraft.link_url}} />
+          <Input @value={{this.modalDraft.link_url}} @disabled={{this.isSidebarCategoryLink}} />
+          {{#if this.isSidebarCategoryLink}}
+            <p class="community-hub-muted">选择分类后会自动写入 link_url。</p>
+          {{/if}}
         {{/if}}
       </div>
 

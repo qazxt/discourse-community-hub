@@ -7,18 +7,13 @@ import { ajax } from "discourse/lib/ajax";
 export default class CommunityHubController extends Controller {
   @tracked isLoading = true;
 
-  @tracked navItems = [];
   @tracked heroBanners = [];
-  @tracked filterQuickTags = [];
   @tracked sidebarWidgets = [];
-
-  @tracked sidebarSectionTitle = "";
-  @tracked sidebarViewAll = { label: "", url: "", is_external: false };
 
   @tracked categories = [];
 
   @tracked modalOpen = false;
-  @tracked modalType = null;
+  @tracked modalType = null; // "hero" | "sidebar"
   @tracked modalDraft = null;
   @tracked modalTarget = null;
   @tracked uploadError = null;
@@ -30,16 +25,8 @@ export default class CommunityHubController extends Controller {
     this.loadConfig();
   }
 
-  get isNavModal() {
-    return this.modalType === "nav";
-  }
-
   get isHeroModal() {
     return this.modalType === "hero";
-  }
-
-  get isFilterModal() {
-    return this.modalType === "filter";
   }
 
   get isSidebarModal() {
@@ -54,42 +41,26 @@ export default class CommunityHubController extends Controller {
     return this.modalDraft?._linkMode === "category";
   }
 
+  get isSidebarCustomLink() {
+    return this.modalDraft?._linkMode !== "category";
+  }
+
+  get isSidebarCategoryLink() {
+    return this.modalDraft?._linkMode === "category";
+  }
+
   csrfToken() {
     const el = document.querySelector('meta[name="csrf-token"]');
     return el ? el.content : null;
   }
 
-  sectionProp(type) {
-    if (type === "nav") return "navItems";
-    if (type === "hero") return "heroBanners";
-    if (type === "filter") return "filterQuickTags";
-    return "sidebarWidgets";
+  listProp(type) {
+    return type === "hero" ? "heroBanners" : "sidebarWidgets";
   }
 
   itemsPayloadForSave(type) {
-    const prop = this.sectionProp(type);
+    const prop = this.listProp(type);
     const list = this[prop] || [];
-    if (type === "nav") {
-      return list.map((x) => ({
-        id: x.id || null,
-        label: x.label,
-        url: x.url,
-        bg_color: x.bg_color,
-        is_external: x.is_external,
-        sort_order: x.sort_order,
-        active: true,
-      }));
-    }
-    if (type === "filter") {
-      return list.map((x) => ({
-        id: x.id || null,
-        label: x.label,
-        url: x.url,
-        is_external: x.is_external,
-        sort_order: x.sort_order,
-        active: true,
-      }));
-    }
     if (type === "hero") {
       return list.map((x) => ({
         id: x.id || null,
@@ -117,20 +88,8 @@ export default class CommunityHubController extends Controller {
     try {
       const data = await ajax("/admin/plugins/community-hub/config.json");
 
-      this.navItems = data.nav_items || [];
       this.heroBanners = data.hero_banners || [];
-      this.filterQuickTags = data.filter_quick_tags || [];
       this.sidebarWidgets = data.sidebar_widgets || [];
-
-      this.sidebarSectionTitle = data.sidebar_section_title || "";
-      const va = data.sidebar_view_all;
-      this.sidebarViewAll = va
-        ? {
-            label: va.label || "",
-            url: va.url || "",
-            is_external: !!va.is_external,
-          }
-        : { label: "", url: "", is_external: false };
 
       this.loadCategories();
       scheduleOnce("afterRender", this, this.attachDnDHandlers);
@@ -186,15 +145,11 @@ export default class CommunityHubController extends Controller {
       if (fromIndex === toIndex) return;
 
       const propMap = {
-        nav_items: "navItems",
         hero_banners: "heroBanners",
-        filter_quick_tags: "filterQuickTags",
         sidebar_widgets: "sidebarWidgets",
       };
       const saveTypeMap = {
-        nav_items: "nav",
         hero_banners: "hero",
-        filter_quick_tags: "filter",
         sidebar_widgets: "sidebar",
       };
 
@@ -213,20 +168,6 @@ export default class CommunityHubController extends Controller {
   }
 
   defaultDraft(type, sortOrder = 0) {
-    if (type === "nav") {
-      return {
-        id: null,
-        label: "",
-        url: "",
-        bg_color: "",
-        is_external: false,
-        sort_order: sortOrder,
-        active: true,
-      };
-    }
-    if (type === "filter") {
-      return { id: null, label: "", url: "", is_external: false, sort_order: sortOrder, active: true };
-    }
     if (type === "hero") {
       return {
         id: null,
@@ -234,37 +175,25 @@ export default class CommunityHubController extends Controller {
         image_url: "",
         link_url: "",
         bg_color: "#f6ebe3",
+        _linkMode: "custom",
         sort_order: sortOrder,
         active: true,
       };
     }
-    return { id: null, title: "", image_url: "", link_url: "", sort_order: sortOrder, active: true };
+    return {
+      id: null,
+      title: "",
+      image_url: "",
+      link_url: "",
+      _linkMode: "custom",
+      sort_order: sortOrder,
+      active: true,
+    };
   }
 
   normalizeDraftForOpen(type, item) {
     if (!item) return this.defaultDraft(type);
     const d = { ...item };
-    if (type === "nav") {
-      return {
-        id: d.id ?? null,
-        label: d.label ?? "",
-        url: d.url ?? "",
-        bg_color: d.bg_color ?? "",
-        is_external: !!d.is_external,
-        sort_order: d.sort_order ?? 0,
-        active: true,
-      };
-    }
-    if (type === "filter") {
-      return {
-        id: d.id ?? null,
-        label: d.label ?? "",
-        url: d.url ?? "",
-        is_external: !!d.is_external,
-        sort_order: d.sort_order ?? 0,
-        active: true,
-      };
-    }
     if (type === "hero") {
       return {
         id: d.id ?? null,
@@ -282,6 +211,7 @@ export default class CommunityHubController extends Controller {
       title: d.title ?? "",
       image_url: d.image_url ?? "",
       link_url: d.link_url ?? "",
+      _linkMode: "custom",
       sort_order: d.sort_order ?? 0,
       active: true,
     };
@@ -314,7 +244,7 @@ export default class CommunityHubController extends Controller {
 
   @action
   addNew(type) {
-    const prop = this.sectionProp(type);
+    const prop = this.listProp(type);
     const arr = this[prop] || [];
     const draft = this.defaultDraft(type, arr.length);
     this.openModal(type, null);
@@ -326,13 +256,9 @@ export default class CommunityHubController extends Controller {
   async deleteItem(type, id) {
     if (!id) return;
     const api =
-      type === "nav"
-        ? `/admin/plugins/community-hub/nav_items/${id}.json`
-        : type === "hero"
-          ? `/admin/plugins/community-hub/hero_banners/${id}.json`
-          : type === "filter"
-            ? `/admin/plugins/community-hub/filter_quick_tags/${id}.json`
-            : `/admin/plugins/community-hub/sidebar_widgets/${id}.json`;
+      type === "hero"
+        ? `/admin/plugins/community-hub/hero_banners/${id}.json`
+        : `/admin/plugins/community-hub/sidebar_widgets/${id}.json`;
 
     await ajax(api, { type: "DELETE" });
     await this.loadConfig();
@@ -397,16 +323,11 @@ export default class CommunityHubController extends Controller {
   @action
   async saveCategory(type) {
     const api =
-      type === "nav"
-        ? "/admin/plugins/community-hub/nav_items.json"
-        : type === "hero"
-          ? "/admin/plugins/community-hub/hero_banners.json"
-          : type === "filter"
-            ? "/admin/plugins/community-hub/filter_quick_tags.json"
-            : "/admin/plugins/community-hub/sidebar_widgets.json";
+      type === "hero"
+        ? "/admin/plugins/community-hub/hero_banners.json"
+        : "/admin/plugins/community-hub/sidebar_widgets.json";
 
     const items = this.itemsPayloadForSave(type);
-    // 必须用 JSON 请求体：嵌套数组经表单序列化后 Rails 常得不到 Array，normalize_items 会对 String 调 map → 500
     await ajax(api, {
       type: "PUT",
       contentType: "application/json; charset=UTF-8",
@@ -417,24 +338,12 @@ export default class CommunityHubController extends Controller {
   }
 
   @action
-  async saveSidebarExtras() {
-    await ajax("/admin/plugins/community-hub/sidebar_extras.json", {
-      type: "PUT",
-      data: {
-        sidebar_section_title: this.sidebarSectionTitle,
-        sidebar_view_all: this.sidebarViewAll,
-      },
-    });
-    await this.loadConfig();
-  }
-
-  @action
   async saveModalChanges() {
     const draft = this.modalDraft;
     const type = this.modalType;
 
     if (draft && type) {
-      const prop = this.sectionProp(type);
+      const prop = this.listProp(type);
       const list = (this[prop] || []).slice();
 
       if (this.modalTarget) {
