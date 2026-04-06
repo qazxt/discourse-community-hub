@@ -4,6 +4,29 @@ import { tracked } from "@glimmer/tracking";
 import { scheduleOnce } from "@ember/runloop";
 import { ajax } from "discourse/lib/ajax";
 
+/** Prefer browser-usable URLs; avoid Discourse upload:// short refs (PLUGIN-INTERFACE.md §9). */
+function pickImageUrlFromUploadResponse(data) {
+  const candidates = [
+    data?.url,
+    data?.upload?.url,
+    data?.files?.[0]?.url,
+    data?.location,
+    data?.short_url,
+    data?.files?.[0]?.short_url,
+    data?.upload?.short_url,
+  ].filter((x) => x != null && String(x).trim() !== "");
+
+  for (const c of candidates) {
+    const s = String(c).trim();
+    if (s.startsWith("upload://")) {
+      continue;
+    }
+    return s;
+  }
+
+  return candidates.length ? String(candidates[0]).trim() : null;
+}
+
 export default class CommunityHubController extends Controller {
   @tracked isLoading = true;
 
@@ -283,14 +306,7 @@ export default class CommunityHubController extends Controller {
     });
 
     const data = await res.json();
-    const url =
-      data?.short_url ||
-      data?.url ||
-      data?.files?.[0]?.url ||
-      data?.files?.[0]?.short_url ||
-      data?.location ||
-      data?.upload?.short_url ||
-      data?.upload?.url;
+    const url = pickImageUrlFromUploadResponse(data);
 
     if (!url) {
       this.uploadError = "Upload failed: can not extract image URL";

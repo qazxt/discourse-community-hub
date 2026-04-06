@@ -7,8 +7,8 @@ module CommunityHub
 
       def index
         render json: {
-          hero_banners: read_store("hero_banners", []),
-          sidebar_widgets: read_store("sidebar_widgets", [])
+          hero_banners: with_resolved_image_urls(read_store("hero_banners", [])),
+          sidebar_widgets: with_resolved_image_urls(read_store("sidebar_widgets", []))
         }
       end
 
@@ -108,13 +108,21 @@ module CommunityHub
         PluginStore.get(CommunityHub::PLUGIN_NAME, key) || default
       end
 
+      def with_resolved_image_urls(items)
+        items.map do |x|
+          h = x.stringify_keys
+          h["image_url"] = CommunityHub.resolve_image_url_for_hub(h["image_url"])
+          h
+        end
+      end
+
       def normalize_hero_banners(items)
         items.each_with_index.map do |x, idx|
           h = x.stringify_keys
           {
             "id" => (h["id"].presence || Time.now.to_f * 1000 + idx).to_i,
             "title" => h["title"].to_s,
-            "image_url" => h["image_url"].to_s,
+            "image_url" => CommunityHub.resolve_image_url_for_hub(h["image_url"]),
             "link_url" => h["link_url"].to_s,
             "bg_color" => h["bg_color"].presence || "#f6ebe3",
             "sort_order" => h["sort_order"].to_i,
@@ -129,7 +137,7 @@ module CommunityHub
           {
             "id" => (h["id"].presence || Time.now.to_f * 1000 + idx).to_i,
             "title" => h["title"].to_s,
-            "image_url" => h["image_url"].to_s,
+            "image_url" => CommunityHub.resolve_image_url_for_hub(h["image_url"]),
             "link_url" => h["link_url"].to_s,
             "sort_order" => h["sort_order"].to_i,
             "active" => true

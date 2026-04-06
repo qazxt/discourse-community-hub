@@ -21,11 +21,11 @@ module CommunityHub
         "hero_banners" => hero_banners
           .select { |x| x.fetch("active", true) }
           .sort_by { |x| x.fetch("sort_order", 0).to_i }
-          .map { |x| { "title" => x["title"], "image_url" => x["image_url"], "bg_color" => x["bg_color"].presence || "#f6ebe3", "link_url" => x["link_url"] } },
+          .map { |x| { "title" => x["title"], "image_url" => CommunityHub.resolve_image_url_for_hub(x["image_url"]), "bg_color" => x["bg_color"].presence || "#f6ebe3", "link_url" => x["link_url"] } },
         "sidebar_widgets" => sidebar_widgets
           .select { |x| x.fetch("active", true) }
           .sort_by { |x| x.fetch("sort_order", 0).to_i }
-          .map { |x| { "title" => x["title"], "image_url" => x["image_url"], "link_url" => x["link_url"] } }
+          .map { |x| { "title" => x["title"], "image_url" => CommunityHub.resolve_image_url_for_hub(x["image_url"]), "link_url" => x["link_url"] } }
       }
     end
 
