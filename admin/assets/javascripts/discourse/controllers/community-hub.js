@@ -4,7 +4,7 @@ import { tracked } from "@glimmer/tracking";
 import { scheduleOnce } from "@ember/runloop";
 import { ajax } from "discourse/lib/ajax";
 
-/** Prefer browser-usable URLs; avoid Discourse upload:// short refs (PLUGIN-INTERFACE.md §9). */
+/** 选用浏览器可直接请求的 URL，避免 upload:// 短链（主题里 img 无法直接使用）。 */
 function pickImageUrlFromUploadResponse(data) {
   const candidates = [
     data?.url,

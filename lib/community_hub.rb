@@ -4,7 +4,7 @@ module CommunityHub
   PLUGIN_NAME = "community-hub"
   CACHE_KEY = "community-hub:hub_config"
 
-  # PLUGIN-INTERFACE.md §9：主题用 <img>/background-image 不能直接用 upload://；落库与公开 JSON 使用 Upload#url
+  # 主题用 <img>/background-image 不能直接用 upload://；落库与公开 JSON 使用 Upload#url
   def self.resolve_image_url_for_hub(raw)
     s = raw.to_s.strip
     return s if s.blank?

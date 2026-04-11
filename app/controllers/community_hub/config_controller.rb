@@ -12,7 +12,7 @@ module CommunityHub
 
     private
 
-    # 与 PLUGIN-INTERFACE.md 一致：仅返回 hero_banners、sidebar_widgets（主题忽略其余旧字段）
+    # 仅返回 hero_banners、sidebar_widgets（主题忽略其余旧字段）
     def build_hub_config
       hero_banners = read_store("hero_banners", [])
       sidebar_widgets = read_store("sidebar_widgets", [])

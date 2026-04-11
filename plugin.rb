@@ -23,7 +23,7 @@ after_initialize do
   Discourse::Application.routes.append do
     get "/hub-config.json" => "community_hub/config#show"
 
-    # Admin UI API (仅管理员可访问) — 仅 hero_banners / sidebar_widgets，与 PLUGIN-INTERFACE.md 一致
+    # Admin UI API (仅管理员可访问) — 仅 hero_banners / sidebar_widgets，与 hub-config.json 一致
     get "/admin/plugins/community-hub/config.json" => "community_hub/admin/config#index"
     put "/admin/plugins/community-hub/hero_banners.json" => "community_hub/admin/config#save_hero_banners"
     put "/admin/plugins/community-hub/sidebar_widgets.json" => "community_hub/admin/config#save_sidebar_widgets"

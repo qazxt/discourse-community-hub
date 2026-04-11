@@ -1,47 +1,55 @@
-为 Robotime 主题提供 **`GET /hub-config.json`** 中的**顶栏轮播**与**侧栏幻灯片**数据；导航、预显标签、侧栏标题与「查看全部」等由 **主题 Theme settings** 配置（见仓库内 `PLUGIN-INTERFACE.md` §三）。
+# Community Hub（Discourse 插件）
 
-## 功能概览
+为 Robotime 等主题提供 **`GET /hub-config.json`** 中的**顶栏轮播**（`hero_banners`）与**侧栏幻灯片**（`sidebar_widgets`）数据。导航、预显标签、Logo、侧栏标题与「查看全部」等由**主题的 Theme settings** 配置，不由本插件后台维护。
 
-### 1) 存储（无需 Migration）
+## 功能
 
-使用 Discourse `PluginStore`（namespace `community-hub`）：
-
-- `hero_banners`：顶栏轮播
-- `sidebar_widgets`：侧栏幻灯片
-
-### 2) 后台管理
-
-- **入口**：`/admin/community-hub`（侧边栏对应 locale 文案）
-- **能力**：轮播 / 侧栏 widget 的增删改、拖拽排序、图片上传（`/uploads.json`）、可选分类快捷生成 `link_url`
-
-### 3) 公开 API
-
-- **`GET /hub-config.json`**：仅返回 `hero_banners` 与 `sidebar_widgets`（按 `sort_order`、`active` 过滤），字段与 `PLUGIN-INTERFACE.md` §二 一致
-- **缓存**：`Rails.cache.fetch("community-hub:hub_config", expires_in: 1.hour)`，保存/删除会失效
+- **持久化**：使用 Discourse `PluginStore`（namespace `community-hub`），无需数据库 Migration。
+- **管理后台**：在 `/admin/community-hub` 维护轮播与侧栏条目；支持增删改、拖拽排序、图片上传（Discourse `/uploads.json`），并可按分类快捷生成链接。
+- **公开 JSON**：`GET /hub-config.json` 仅返回 `hero_banners` 与 `sidebar_widgets`（按 `sort_order`、`active` 过滤）。
+- **缓存**：响应经 `Rails.cache`（约 1 小时）；保存或删除条目时会失效缓存。
 
 ## 安装与启用
 
-### Docker
+1. 将本仓库置于 Discourse 的 `plugins/` 下（目录名可与仓库一致，例如 `community-hub`）。
+2. 按站点方式重建或编译前端并重启（Docker 环境常见为 `./launcher rebuild app`）。
+3. 在 **Admin → Settings → Plugins**（或站点设置搜索）中确认 **`community_hub_enabled`** 已开启（默认 true，可按需关闭整站 hub 能力）。
 
-1. 将插件放到 `plugins/community-hub`（或你的挂载路径）
-2. `./launcher rebuild app`（或等价重建）
-3. **Admin → Settings** 开启 `community_hub_enabled`
+## 后台配置（插件）
 
-### 源码
+| 项目 | 说明 |
+|------|------|
+| 入口 | 浏览器打开 **`/admin/community-hub`**（管理侧栏会显示对应文案，随 locale） |
+| 顶栏轮播 | 对应存储键 `hero_banners` |
+| 侧栏幻灯片 | 对应存储键 `sidebar_widgets` |
+| 图片 | 通过 Discourse 上传接口生成可访问的 `image_url` |
 
-1. `plugins/community-hub`
-2. 编译前端并重启
-3. 开启 `community_hub_enabled`
+运营在后台改动的内容，会反映在 **`/hub-config.json`** 中（仅上述两类数据）。
 
-## 主题侧配置（不在插件后台）
+## 主题侧配置（非本插件后台）
 
-请到 **Admin → Customize → Themes → [主题] → Theme settings** 配置，例如：
+在 **Admin → Customize → Themes → [目标主题] → Theme settings** 中配置，例如：
 
-- `robotime_nav_links`、`robotime_filter_quick_tags`、`robotime_logo_url`
-- `robotime_sidebar_section_title`、`robotime_sidebar_view_all_*`
-- `robotime_carousel_enabled` 等
+| 设置项 | 用途 |
+|--------|------|
+| `robotime_logo_url` | 顶栏 Logo；空则显示默认文字 |
+| `robotime_nav_links` | 顶栏 / 移动菜单导航，`标签\|URL`，逗号分隔 |
+| `robotime_carousel_enabled` | 是否展示顶栏轮播并消费 JSON 中的 `hero_banners` |
+| `robotime_sidebar_section_title` | 侧栏 widget 区块标题 |
+| `robotime_sidebar_view_all_label` / `robotime_sidebar_view_all_url` | 「查看全部」文案与链接（链接为空则不渲染） |
+| `robotime_filter_quick_tags` | 话题列表预显标签（JSON 数组字符串） |
+| `robotime_official_events_category` | 预留，当前不参与 hub 合并 |
 
-## `GET /hub-config.json` 示例
+主题应请求 **`GET /hub-config.json`**，并只采用其中的 **`hero_banners`** 与 **`sidebar_widgets`**；其余 UI 字段以主题设置为准。
+
+## `GET /hub-config.json` 数据形状
+
+以下为对外字段约定（与主题消费一致）：
+
+**`hero_banners`**：`{ title, image_url, bg_color?, link_url }[]`  
+**`sidebar_widgets`**：`{ title, image_url, link_url }[]`
+
+示例：
 
 ```json
 {
@@ -63,8 +71,4 @@
 }
 ```
 
-## 手工验证
-
-1. 在后台添加轮播与侧栏条目并保存，确认 `GET /hub-config.json` 与后台一致
-2. 拖拽排序后刷新，顺序应保持
-3. 删除后 JSON 中应不再出现该项
+若 JSON 中仍带有历史字段（如 `nav_items` 等），**主题侧应忽略**，以免与 Theme settings 冲突。
