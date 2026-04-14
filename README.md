@@ -4,7 +4,7 @@
 
 ## 功能
 
-- **持久化**：使用 Discourse `PluginStore`（namespace `community-hub`），无需数据库 Migration。
+- **持久化**：配置项使用 `PluginStore`；并使用一张轻量表维护上传引用，避免图片被判定为孤儿上传清理。
 - **管理后台**：在 `/admin/community-hub` 维护轮播与侧栏条目；支持增删改、拖拽排序、图片上传（Discourse `/uploads.json`），并可按分类快捷生成链接。
 - **公开 JSON**：`GET /hub-config.json` 仅返回 `hero_banners` 与 `sidebar_widgets`（按 `sort_order`、`active` 过滤）。
 - **缓存**：响应经 `Rails.cache`（约 1 小时）；保存或删除条目时会失效缓存。
@@ -13,6 +13,7 @@
 
 1. 将本仓库置于 Discourse 的 `plugins/` 下（目录名可与仓库一致，例如 `community-hub`）。
 2. 按站点方式重建或编译前端并重启（Docker 环境常见为 `./launcher rebuild app`）。
+   - 开发环境若非整站重建，请执行 `bundle exec rake db:migrate` 以创建插件上传引用表。
 3. 在 **Admin → Settings → Plugins**（或站点设置搜索）中确认 **`community_hub_enabled`** 已开启（默认 true，可按需关闭整站 hub 能力）。
 
 ## 后台配置（插件）

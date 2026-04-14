@@ -8,12 +8,20 @@ module CommunityHub
   def self.resolve_image_url_for_hub(raw)
     s = raw.to_s.strip
     return s if s.blank?
-    return s unless s.start_with?("upload://")
+    upload = find_upload_by_url(s)
+    upload&.url.presence || s
+  end
 
-    sha1 = Upload.sha1_from_short_url(s)
-    return s if sha1.blank?
+  def self.find_upload_by_url(raw)
+    s = raw.to_s.strip
+    return nil if s.blank?
 
-    Upload.find_by(sha1: sha1)&.url.presence || s
+    sha1 = Upload.sha1_from_short_url(s) || Upload.sha1_from_short_path(s) || Upload.sha1_from_long_url(s)
+    return Upload.find_by(sha1: sha1) if sha1.present?
+
+    Upload.get_from_url(s)
+  rescue URI::InvalidURIError
+    nil
   end
 end
 

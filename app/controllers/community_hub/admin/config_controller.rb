@@ -24,6 +24,7 @@ module CommunityHub
         id = params.require(:id).to_i
         items = read_store("hero_banners", []).reject { |x| x["id"].to_i == id }
         write_store("hero_banners", items)
+        sync_upload_references!("hero_banners", items)
         render json: { ok: true }
       end
 
@@ -31,6 +32,7 @@ module CommunityHub
         id = params.require(:id).to_i
         items = read_store("sidebar_widgets", []).reject { |x| x["id"].to_i == id }
         write_store("sidebar_widgets", items)
+        sync_upload_references!("sidebar_widgets", items)
         render json: { ok: true }
       end
 
@@ -38,7 +40,9 @@ module CommunityHub
 
       def save_items_bucket!(store_key, normalizer_method)
         items = normalize_items(parse_items_param)
-        write_store(store_key, send(normalizer_method, items))
+        normalized = send(normalizer_method, items)
+        write_store(store_key, normalized)
+        sync_upload_references!(store_key, normalized)
         render json: { ok: true }
       rescue ActionController::ParameterMissing => e
         render json: { ok: false, error: e.message }, status: :unprocessable_entity
@@ -106,6 +110,35 @@ module CommunityHub
 
       def read_store(key, default)
         PluginStore.get(CommunityHub::PLUGIN_NAME, key) || default
+      end
+
+      def sync_upload_references!(kind, items)
+        normalized_items = normalize_items(items)
+        keep_ids = normalized_items.map { |x| x["id"].to_i }.select(&:positive?)
+
+        stale_bindings = CommunityHub::UploadBinding.where(kind: kind)
+        stale_bindings = stale_bindings.where.not(item_id: keep_ids) if keep_ids.any?
+        stale_bindings.each do |binding|
+          UploadReference.where(target_type: binding.class.name, target_id: binding.id).delete_all
+        end
+        stale_bindings.delete_all
+
+        normalized_items.each do |item|
+          item_id = item["id"].to_i
+          next unless item_id.positive?
+
+          binding = CommunityHub::UploadBinding.find_or_create_by!(kind: kind, item_id: item_id)
+          UploadReference.where(target_type: binding.class.name, target_id: binding.id).delete_all
+
+          upload = CommunityHub.find_upload_by_url(item["image_url"])
+          next if upload.blank?
+
+          UploadReference.create!(
+            upload_id: upload.id,
+            target_type: binding.class.name,
+            target_id: binding.id
+          )
+        end
       end
 
       def with_resolved_image_urls(items)
