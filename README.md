@@ -9,11 +9,27 @@
 - **公开 JSON**：`GET /hub-config.json` 仅返回 `hero_banners` 与 `sidebar_widgets`（按 `sort_order`、`active` 过滤）。
 - **缓存**：响应经 `Rails.cache`（约 1 小时）；保存或删除条目时会失效缓存。
 
+## 诊断（图片 / 孤儿引用）
+
+在 **Discourse 根目录**执行（路径按你的插件目录名调整）：
+
+```bash
+./d/rails runner plugins/community-hub/script/diagnose_community_hub_images.rb
+```
+
+脚本会读取 `PluginStore` 中的 `hero_banners` / `sidebar_widgets`，检查 `image_url` 是否能解析到 `Upload`、是否存在 `UploadReference`、以及 `community_hub_upload_bindings` 表是否已迁移。
+
+按 **upload id** 查看引用明细（适合排障单张图）：
+
+```bash
+./d/rails runner plugins/community-hub/script/diagnose_upload_by_id.rb 81
+```
+
 ## 安装与启用
 
 1. 将本仓库置于 Discourse 的 `plugins/` 下（目录名可与仓库一致，例如 `community-hub`）。
 2. 按站点方式重建或编译前端并重启（Docker 环境常见为 `./launcher rebuild app`）。
-   - 开发环境若非整站重建，请执行 `bundle exec rake db:migrate` 以创建插件上传引用表。
+   - 开发环境若非整站重建，请在 Discourse 根目录执行 `./d/rake db:migrate` 以创建插件上传引用表。
 3. 在 **Admin → Settings → Plugins**（或站点设置搜索）中确认 **`community_hub_enabled`** 已开启（默认 true，可按需关闭整站 hub 能力）。
 
 ## 后台配置（插件）
@@ -73,3 +89,9 @@
 ```
 
 若 JSON 中仍带有历史字段（如 `nav_items` 等），**主题侧应忽略**，以免与 Theme settings 冲突。
+
+id = 81
+UploadReference.where(upload_id: id).pluck(:target_type, :target_id)
+UploadReference.where(upload_id: id).count
+u = Upload.find(id)
+[u.created_at, u.retain_hours, u.secure?, u.access_control_post_id, SiteSetting.clean_up_uploads, SiteSetting.clean_orphan_uploads_grace_period_hours]
