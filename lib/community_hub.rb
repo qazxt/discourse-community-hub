@@ -16,7 +16,9 @@ module CommunityHub
     s = raw.to_s.strip
     return nil if s.blank?
 
-    sha1 = Upload.sha1_from_short_url(s) || Upload.sha1_from_short_path(s) || Upload.sha1_from_long_url(s)
+    # 注意顺序：不要优先 short_url 解析，否则 "//localhost/..." 会被误判为短码。
+    sha1 = Upload.sha1_from_long_url(s) || Upload.sha1_from_short_path(s)
+    sha1 ||= Upload.sha1_from_short_url(s) if s.start_with?("upload://")
     return Upload.find_by(sha1: sha1) if sha1.present?
 
     Upload.get_from_url(s)
