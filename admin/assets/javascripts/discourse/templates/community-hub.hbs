@@ -14,7 +14,7 @@
 
     <div class="community-hub-section">
       <h3>顶栏轮播 (hero_banners)</h3>
-      <p class="community-hub-muted">字段：title / image_url / link_url / bg_color（可选）</p>
+      <p class="community-hub-muted">字段：title / image_url / link_url / bg_color（可选）/ title_color（可选）</p>
       <div class="community-hub-actions">
         <button type="button" {{on "click" (fn this.addNew "hero")}}>Add</button>
       </div>
@@ -99,6 +99,9 @@
 
           <label>兜底背景色 (bg_color，可选)</label>
           <Input @value={{this.modalDraft.bg_color}} placeholder="#f6ebe3" />
+
+          <label>标题颜色 (title_color，可选)</label>
+          <Input @value={{this.modalDraft.title_color}} placeholder="#111111" />
         {{/if}}
 
         {{#if this.isSidebarModal}}

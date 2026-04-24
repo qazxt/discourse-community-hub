@@ -21,7 +21,17 @@ module CommunityHub
         "hero_banners" => hero_banners
           .select { |x| x.fetch("active", true) }
           .sort_by { |x| x.fetch("sort_order", 0).to_i }
-          .map { |x| { "title" => x["title"], "image_url" => CommunityHub.resolve_image_url_for_hub(x["image_url"]), "bg_color" => x["bg_color"].presence || "#f6ebe3", "link_url" => x["link_url"] } },
+          .map do |x|
+            title_color = x["title_color"].presence || x["text_color"].presence
+            {
+              "title" => x["title"],
+              "image_url" => CommunityHub.resolve_image_url_for_hub(x["image_url"]),
+              "bg_color" => x["bg_color"].presence || "#f6ebe3",
+              "title_color" => title_color,
+              "text_color" => title_color,
+              "link_url" => x["link_url"]
+            }
+          end,
         "sidebar_widgets" => sidebar_widgets
           .select { |x| x.fetch("active", true) }
           .sort_by { |x| x.fetch("sort_order", 0).to_i }

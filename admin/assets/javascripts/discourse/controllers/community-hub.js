@@ -91,6 +91,7 @@ export default class CommunityHubController extends Controller {
         image_url: x.image_url,
         link_url: x.link_url,
         bg_color: x.bg_color,
+        title_color: x.title_color,
         sort_order: x.sort_order,
         active: true,
       }));
@@ -198,6 +199,7 @@ export default class CommunityHubController extends Controller {
         image_url: "",
         link_url: "",
         bg_color: "#f6ebe3",
+        title_color: "",
         _linkMode: "custom",
         sort_order: sortOrder,
         active: true,
@@ -224,6 +226,7 @@ export default class CommunityHubController extends Controller {
         image_url: d.image_url ?? "",
         link_url: d.link_url ?? "",
         bg_color: d.bg_color ?? "#f6ebe3",
+        title_color: d.title_color ?? d.text_color ?? "",
         _linkMode: "custom",
         sort_order: d.sort_order ?? 0,
         active: true,

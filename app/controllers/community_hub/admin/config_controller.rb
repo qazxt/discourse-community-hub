@@ -152,12 +152,14 @@ module CommunityHub
       def normalize_hero_banners(items)
         items.each_with_index.map do |x, idx|
           h = x.stringify_keys
+          title_color = h["title_color"].presence || h["text_color"].presence
           {
             "id" => (h["id"].presence || Time.now.to_f * 1000 + idx).to_i,
             "title" => h["title"].to_s,
             "image_url" => CommunityHub.resolve_image_url_for_hub(h["image_url"]),
             "link_url" => h["link_url"].to_s,
             "bg_color" => h["bg_color"].presence || "#f6ebe3",
+            "title_color" => title_color,
             "sort_order" => h["sort_order"].to_i,
             "active" => true
           }

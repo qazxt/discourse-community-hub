@@ -63,7 +63,7 @@
 
 以下为对外字段约定（与主题消费一致）：
 
-**`hero_banners`**：`{ title, image_url, bg_color?, link_url }[]`  
+**`hero_banners`**：`{ title, image_url, bg_color?, title_color?, text_color?, link_url }[]`  
 **`sidebar_widgets`**：`{ title, image_url, link_url }[]`
 
 示例：
@@ -75,6 +75,8 @@
       "title": "User Guide & Perks",
       "image_url": "/uploads/default/original/1/abc.png",
       "bg_color": "#f6ebe3",
+      "title_color": "#111111",
+      "text_color": "#111111",
       "link_url": "/c/user-guide-perks"
     }
   ],
@@ -89,9 +91,3 @@
 ```
 
 若 JSON 中仍带有历史字段（如 `nav_items` 等），**主题侧应忽略**，以免与 Theme settings 冲突。
-
-id = 81
-UploadReference.where(upload_id: id).pluck(:target_type, :target_id)
-UploadReference.where(upload_id: id).count
-u = Upload.find(id)
-[u.created_at, u.retain_hours, u.secure?, u.access_control_post_id, SiteSetting.clean_up_uploads, SiteSetting.clean_orphan_uploads_grace_period_hours]
